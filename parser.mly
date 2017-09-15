@@ -23,7 +23,7 @@
 %}
 %%
 
-main: statements = declarations EOF { Ast.Program { children = statements } }
+main: statements = declarations { Ast.Program { children = statements } }
 
 declarations:
 | dec = EOF { [] }
@@ -39,7 +39,7 @@ function_declaration: FUNC LPAREN plist = parameter_list RPAREN LBRACE statement
 }
 
 statementseq:
-| stmt = statement EOF { [stmt] }
+| stmt = statement { [stmt] }
 | stmt = statement m = statementseq {  stmt :: m }
 
 statement:

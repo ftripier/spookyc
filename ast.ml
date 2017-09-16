@@ -10,6 +10,7 @@ type node =
   | Reference of string  
   | Expression of { children: node list; }
   | FunctionDeclaration of { id:string; children: node list; }
+  | FunctionCall of { id:string; children: node list; }
   | StatementList of { children: node list; }
   | ParameterList of { children: node list; }  
   | VariableDeclaration of { id: string; children: node list; }
@@ -40,7 +41,8 @@ let serialize_node (n: node) =
     | Reference n -> Printf.sprintf "Reference!: %s\n%!" n
     | Statement n -> "Statement!\n"
     | ReturnStatement n -> "ReturnStatement!\n"    
-    | FunctionDeclaration n -> "FunctionDeclaration!\n"
+    | FunctionDeclaration n -> Printf.sprintf "FunctionDeclaration!: %s\n%!" n.id
+    | FunctionCall n -> Printf.sprintf "FunctionCall!: %s\n%!" n.id
     | StatementList n -> "StatementList!\n"
     | ParameterList n -> "ParameterList!\n"  
     | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s\n%!" n.id
@@ -62,6 +64,7 @@ let rec print_ast (syntax:node) ?level:(l=0) =
   | Expression syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Reference syntax -> ()
   | FunctionDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | FunctionCall syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
   | StatementList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | ParameterList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
   | VariableDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children

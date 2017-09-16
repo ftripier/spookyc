@@ -28,6 +28,7 @@ main: statements = declarations { Ast.Program { children = statements } }
 declarations:
 | dec = EOF { [] }
 | dec = function_declaration decs = declarations { dec :: decs }
+| dec = variable_declaration decs = declarations { dec :: decs }
 
 function_declaration: FUNC id = ID LPAREN plist = parameter_list RPAREN LBRACE statements = statementseq RBRACE {
     Ast.FunctionDeclaration {
@@ -61,6 +62,14 @@ expr:
     { Ast.Numeric i  }
 | id = ID
     { Ast.Reference id }
+| id = ID LPAREN params = parameter_list RPAREN {
+    Ast.FunctionCall {
+        id;
+        children=[
+            Ast.ParameterList { children = params; };
+        ];
+    }
+}
 | LPAREN e = expr RPAREN
     {  Ast.Expression { children = [e]; } }
 | e1 = expr PLUS e2 = expr

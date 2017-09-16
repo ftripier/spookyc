@@ -29,8 +29,9 @@ declarations:
 | dec = EOF { [] }
 | dec = function_declaration decs = declarations { dec :: decs }
 
-function_declaration: FUNC LPAREN plist = parameter_list RPAREN LBRACE statements = statementseq RBRACE {
+function_declaration: FUNC id = ID LPAREN plist = parameter_list RPAREN LBRACE statements = statementseq RBRACE {
     Ast.FunctionDeclaration {
+        id;
         children = [
             Ast.ParameterList { children = plist; };
             Ast.StatementList { children = statements; };
@@ -47,7 +48,7 @@ statement:
 | stmt = variable_assignment { stmt }
 | stmt = return_statement { stmt }
 
-variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children = []; } }
+variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children=[]; } }
 variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment { id; children = [e]; } }
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
 
@@ -57,7 +58,9 @@ parameter_list:
 
 expr:
 | i = INT
-    { Ast.Numeric { value = i; children = []; } }
+    { Ast.Numeric i  }
+| id = ID
+    { Ast.Reference id }
 | LPAREN e = expr RPAREN
     {  Ast.Expression { children = [e]; } }
 | e1 = expr PLUS e2 = expr

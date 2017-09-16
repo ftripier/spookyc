@@ -6,9 +6,10 @@ to consolidate these duplicate fields/variants *)
 nonterminal nodes to something more semantically informative. *)
 type node =
   | Program of { children: node list; }
-  | Numeric of { children: node list; value: int; }
+  | Numeric of int
+  | Reference of string  
   | Expression of { children: node list; }
-  | FunctionDeclaration of { children: node list; }
+  | FunctionDeclaration of { id:string; children: node list; }
   | StatementList of { children: node list; }
   | ParameterList of { children: node list; }  
   | VariableDeclaration of { id: string; children: node list; }
@@ -34,14 +35,15 @@ let serialize_operator n =
 let serialize_node (n: node) =
   match n with
     | Program n -> "Program!\n"  
-    | Numeric n -> Printf.sprintf "Numeric!: %d\n%!" n.value
+    | Numeric n -> Printf.sprintf "Numeric!: %d\n%!" n
     | Expression n -> "Expression!\n"
+    | Reference n -> Printf.sprintf "Reference!: %s\n%!" n
     | Statement n -> "Statement!\n"
     | ReturnStatement n -> "ReturnStatement!\n"    
     | FunctionDeclaration n -> "FunctionDeclaration!\n"
     | StatementList n -> "StatementList!\n"
     | ParameterList n -> "ParameterList!\n"  
-    | VariableDeclaration n -> "VariableDeclaration!\n"
+    | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s\n%!" n.id
     | VariableAssignment n -> "VariableAssignment!\n"
     | Operator n -> serialize_operator n
 
@@ -56,8 +58,9 @@ let rec print_ast (syntax:node) ?level:(l=0) =
   print_endline (serialize_node syntax);
   match syntax with
   | Program syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
-  | Numeric syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | Numeric syntax -> ()
   | Expression syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | Reference syntax -> ()
   | FunctionDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | StatementList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | ParameterList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  

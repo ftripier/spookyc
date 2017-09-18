@@ -31,15 +31,15 @@ let populate_symbol_table (ast:Ast.node) =
     | Ast.StatementList syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.ParameterList syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.Statement syntax -> List.iter ~f:visit_ast syntax.children
+    | Ast.Reference syntax ->
+    if Hashtbl.find symbols.symbols syntax == None then
+    raise (Error "Ah! You used a variable before you declared it! I'm so scared!\n")
+    | Ast.VariableAssignment syntax ->
+    if Hashtbl.find symbols.symbols syntax.id == None then
+    raise (Error "And then he... he... He assigned a value to a variable before defining it AHHHHH!\n")
     (* QUESTION: the catchall saves a lot of space, but exhaustiveness would make the code
     more rigorous. Perhaps this is where type refactoring comes into play? at the very least
     the distinction between nonterminals and terminals seems important *)
-    | Ast.Reference syntax ->
-      if Hashtbl.find symbols.symbols syntax == None then
-        raise (Error "Ah! You used a variable before you declared it! I'm so scared!\n")
-    | Ast.VariableAssignment syntax ->
-      if Hashtbl.find symbols.symbols syntax.id == None then
-        raise (Error "And then he... he... He assigned a value to a variable before defining it AHHHHH!\n")
     | _ -> ()
   in
   visit_ast ast;

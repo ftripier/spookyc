@@ -54,19 +54,23 @@ variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment 
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
 
 parameter_list:
+| param = ID { [ Ast.ParamDeclaration param] }
+| param = ID COMMA p = parameter_list {  (Ast.ParamDeclaration param) :: p }
+
+argument_list:
 | param = expr { [param] }
-| param = expr COMMA p = parameter_list {  param :: p }
+| param = expr COMMA p = argument_list {  param :: p }
 
 expr:
 | i = INT
     { Ast.Numeric i  }
 | id = ID
     { Ast.Reference id }
-| id = ID LPAREN params = parameter_list RPAREN {
+| id = ID LPAREN args = argument_list RPAREN {
     Ast.FunctionCall {
         id;
         children=[
-            Ast.ParameterList { children = params; };
+            Ast.ArgumentList { children = args; };
         ];
     }
 }

@@ -1,9 +1,11 @@
-open Core.Std
+open Core
 
 (* TODO: someday, when I'm better at algebraic data types, figure out how
 to consolidate these duplicate fields/variants *)
 (* TODO: not all of these nodes need a children field. Rename the edges for
 nonterminal nodes to something more semantically informative. *)
+(* TODO: perhaps these types could be factored into nonterminal nodes, and
+terminal nodes *)
 type node =
   | Program of { children: node list; }
   | Numeric of int
@@ -11,8 +13,10 @@ type node =
   | Expression of { children: node list; }
   | FunctionDeclaration of { id:string; children: node list; }
   | FunctionCall of { id:string; children: node list; }
+  | ArgumentList of { children: node list; }  
   | StatementList of { children: node list; }
-  | ParameterList of { children: node list; }  
+  | ParameterList of { children: node list; }
+  | ParamDeclaration of string  
   | VariableDeclaration of { id: string; children: node list; }
   | VariableAssignment of { id: string; children: node list; }
   | ReturnStatement of { children: node list; }
@@ -42,9 +46,11 @@ let serialize_node (n: node) =
     | Statement n -> "Statement!\n"
     | ReturnStatement n -> "ReturnStatement!\n"    
     | FunctionDeclaration n -> Printf.sprintf "FunctionDeclaration!: %s\n%!" n.id
+    | ParamDeclaration n -> Printf.sprintf "ParamDeclaration!: %s\n%!" n   
     | FunctionCall n -> Printf.sprintf "FunctionCall!: %s\n%!" n.id
+    | ArgumentList n -> "ArgumentList!\n"    
     | StatementList n -> "StatementList!\n"
-    | ParameterList n -> "ParameterList!\n"  
+    | ParameterList n -> "ParameterList!\n"
     | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s\n%!" n.id
     | VariableAssignment n -> "VariableAssignment!\n"
     | Operator n -> serialize_operator n
@@ -64,10 +70,12 @@ let rec print_ast (syntax:node) ?level:(l=0) =
   | Expression syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Reference syntax -> ()
   | FunctionDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
-  | FunctionCall syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
+  | FunctionCall syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | ArgumentList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
   | StatementList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
-  | ParameterList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
+  | ParameterList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | VariableDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | ParamDeclaration syntax -> ()  
   | VariableAssignment syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | ReturnStatement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Statement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children

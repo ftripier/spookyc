@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let filename = Sys.argv.(1)
 
@@ -6,7 +6,11 @@ let main () =
   let input = open_in filename in
   let filebuf = Lexing.from_channel input in
   try
-    Ast.print_ast (Parser.main Lexer.token filebuf) ~level:0
+    let ast = Parser.main Lexer.token filebuf in
+    Ast.print_ast ast ~level:0;
+    let st = SymbolTable.populate_symbol_table ast in
+    SymbolTable.print_table st
+
   with
   | Lexer.Error msg ->
       Printf.eprintf "%s%!" msg

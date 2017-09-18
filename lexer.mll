@@ -1,6 +1,6 @@
 {
   open Parser
-  open Core.Std
+  open Core
 
   exception Error of string
 }

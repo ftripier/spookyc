@@ -2,6 +2,7 @@ ocamlbuild \
     -use-ocamlfind \
     -use-menhir \
     -pkg core \
+    -pkg re2 \
     -tag "ppx(ppx-jane -as-ppx)" \
     -tag thread \
     -tag debug \

@@ -16,6 +16,8 @@ let main () =
       Printf.eprintf "%s%!" msg
   | Parser.Error ->
       Printf.eprintf "At offset %d: syntax error.\n%!" (Lexing.lexeme_start filebuf)
+  | SymbolTable.Error msg ->
+      Printf.eprintf "%s%!" msg  
   ;
   close_in input
 

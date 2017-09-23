@@ -4,40 +4,57 @@ exception Arithmetic_Error of string
 exception Unrecognized_Opcode of string
 exception Not_enough_op_args of string
 
-let line_stream_of_channel channel =
-  Stream.from
-    (fun _ ->
-       try Some (input_line channel) with End_of_file -> None)
+type opcode =
+  | AddInts
+  | PushInt of int
 
-let interpret_chars chars =
+let interpret_opcodes opcodes =
   let rec next (op_stack: int list) i =
-    match Stream.peek chars, op_stack with
+    match Stream.peek opcodes, op_stack with
     | None, [] -> None
-    | None, [result] -> Some result
-    | None, more :: than_one :: result -> Some more
-    | Some '+', [one_result] -> raise (Not_enough_op_args "addition needs two operands - you gave one")
-    | Some '+', [] -> raise (Not_enough_op_args "addition needs two operands - you gave zero")
-    | Some '+', a :: b :: rest_of_ops ->
-      Stream.junk chars;
-      next ((a + b) :: rest_of_ops) i
-    | Some '1', _ ->
-      Stream.junk chars;
-      let operand = Stream.peek chars in
-      (match operand with
-      | None -> raise (Not_enough_op_args "pushi needs an operand")
-      | Some operand ->
-        Stream.junk chars;
-        next ((Char.to_int operand) :: op_stack) i)
-    | Some op, _ ->
-      raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %s%!" (Char.escaped op))) in
-  Stream.from (next [])
+    | None, result :: tl -> Some result
+    | Some op, op_stack -> (
+      match op with
+      | AddInts -> (
+        match op_stack with
+        | [] -> raise (Not_enough_op_args "not enough operator arguments")
+        | one_op :: [] -> raise (Not_enough_op_args "not enough operator arguments")
+        | a :: b :: tl ->
+          Stream.junk opcodes;
+          next ((a + b) :: tl) i
+      )
+      | PushInt op ->
+        Stream.junk opcodes;
+        next (op :: op_stack) i
+    )
+  in Stream.from (next [])
 
+let consume_operand bytes =
+  match Stream.peek bytes with
+  | None -> raise (Not_enough_op_args "not enough operator arguments")
+  | Some a ->
+    Stream.junk bytes;
+    a
+
+let consume_operand_pair bytes =
+  let a = consume_operand bytes in (a, consume_operand bytes)
+
+let opcodes bytes =
+  let next_opcode i =
+    match Stream.peek bytes with
+    | None -> None
+    | Some 1 -> Stream.junk bytes; Some (PushInt (consume_operand bytes))
+    | Some 2 -> Stream.junk bytes; Some AddInts
+    | Some op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
+  in Stream.from(next_opcode)
+
+let byte_word_stream_of_channel channel =
+  Stream.from (fun _ -> In_channel.input_binary_int channel)
+  
 let interpret filename =
-  let in_channel = open_in filename in
-  let chars = Stream.of_channel in_channel in
-  Stream.iter (
-    fun result -> print_endline (string_of_int result)
-  ) (interpret_chars chars)
+  In_channel.with_file filename ~f:(fun ic ->(
+    Stream.iter (fun res -> print_int res; print_newline()) (interpret_opcodes (opcodes (byte_word_stream_of_channel ic)))
+  ))
 
 let spec =
   let open Command.Spec in

@@ -5,8 +5,25 @@ exception Unrecognized_Opcode of string
 exception Not_enough_op_args of string
 
 type opcode =
-  | AddInts
   | PushInt of int
+  | IntOperation of int_operation
+and int_operation =
+  | AddInts
+  | DivideInts
+  | MultiplyInts
+  | SubtractInts
+
+let resolve_stack op stack =
+  match stack with
+  | [] -> raise (Not_enough_op_args "not enough operator arguments")
+  | one_op :: [] -> raise (Not_enough_op_args "not enough operator arguments")
+  | a :: b :: tl -> let result = (
+      match op with
+      | AddInts -> a + b
+      | DivideInts -> a / b
+      | MultiplyInts -> a * b
+      | SubtractInts -> a - b
+    ) in (result :: tl)
 
 let interpret_opcodes opcodes =
   let rec next (op_stack: int list) i =
@@ -15,14 +32,9 @@ let interpret_opcodes opcodes =
     | None, result :: tl -> Some result
     | Some op, op_stack -> (
       match op with
-      | AddInts -> (
-        match op_stack with
-        | [] -> raise (Not_enough_op_args "not enough operator arguments")
-        | one_op :: [] -> raise (Not_enough_op_args "not enough operator arguments")
-        | a :: b :: tl ->
-          Stream.junk opcodes;
-          next ((a + b) :: tl) i
-      )
+      | IntOperation op ->
+        Stream.junk opcodes;
+        next (resolve_stack op op_stack) i
       | PushInt op ->
         Stream.junk opcodes;
         next (op :: op_stack) i
@@ -44,7 +56,10 @@ let opcodes bytes =
     match Stream.peek bytes with
     | None -> None
     | Some 1 -> Stream.junk bytes; Some (PushInt (consume_operand bytes))
-    | Some 2 -> Stream.junk bytes; Some AddInts
+    | Some 2 -> Stream.junk bytes; Some (IntOperation(AddInts))
+    | Some 3 -> Stream.junk bytes; Some (IntOperation(SubtractInts))
+    | Some 4 -> Stream.junk bytes; Some (IntOperation(MultiplyInts))
+    | Some 5 -> Stream.junk bytes; Some (IntOperation(DivideInts))
     | Some op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
   in Stream.from(next_opcode)
 

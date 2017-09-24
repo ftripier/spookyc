@@ -11,7 +11,7 @@ type node =
   | Numeric of int
   | Reference of string  
   | Expression of { children: node list; }
-  | FunctionDeclaration of { id:string; children: node list; }
+  | FunctionDeclaration of { id:string; parameters: node; code: node; }
   | FunctionCall of { id:string; children: node list; }
   | ArgumentList of { children: node list; }  
   | StatementList of { children: node list; }
@@ -69,7 +69,9 @@ let rec print_ast (syntax:node) ?level:(l=0) =
   | Numeric syntax -> ()
   | Expression syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Reference syntax -> ()
-  | FunctionDeclaration syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | FunctionDeclaration syntax ->
+    print_ast ~level:(l + 1) syntax.parameters;
+    print_ast ~level:(l + 1) syntax.code
   | FunctionCall syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | ArgumentList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
   | StatementList syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children

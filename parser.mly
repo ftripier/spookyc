@@ -33,10 +33,8 @@ declarations:
 function_declaration: FUNC id = ID LPAREN plist = parameter_list RPAREN LBRACE statements = statementseq RBRACE {
     Ast.FunctionDeclaration {
         id;
-        children = [
-            Ast.ParameterList { children = plist; };
-            Ast.StatementList { children = statements; };
-        ];
+        code = Ast.StatementList { children = statements; };
+        parameters = Ast.ParameterList { children = plist; };
     }
 }
 

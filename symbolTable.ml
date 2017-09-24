@@ -1,9 +1,13 @@
 open Core
 
 (* a simple table *)
-type symbol_table = {
-  previous: symbol_table option;
-  symbols: bool String.Table.t;
+type symbol_table = { previous: symbol_table option; symbols: declaration String.Table.t; }
+and declaration =
+| VariableDeclaration of int
+| FunctionDeclaration of {
+  index: int;
+  parameters: symbol_table;
+  locals: symbol_table;
 }
 
 exception Error of string
@@ -32,44 +36,78 @@ let spooky_words = create_spooky_words_regex [
   "creepy";
 ]
 
-
 let not_scary_words = create_spooky_words_regex (* these words arent spooky but code reuse lol *) [
   "not";
   "isnt";
 ]
 
-let print_table table =
-  print_endline "SYMBOL TABLE!";
-  Hashtbl.iter_keys table.symbols ~f:(fun a -> print_endline a)
+let rec print_table ?level:(l=0) table =
+  Hashtbl.iter_keys table.symbols ~f:(
+    fun a ->
+      match Hashtbl.find table.symbols a with
+      | None -> ()
+      | Some dec -> (
+        match dec with
+        | FunctionDeclaration dec ->
+          print_string (Ast.print_level l);
+          print_endline a;
+          print_table ~level:(l+1) dec.parameters;
+          print_table ~level:(l+1) dec.locals;
+        | VariableDeclaration dec ->
+          print_string (Ast.print_level l);
+          print_endline a;
+      )
+  )
 
-let add_symbol symbol table =
-  if Re2.Regex.matches spooky_words symbol then
-    if not(Re2.Regex.matches not_scary_words symbol) then
-      Hashtbl.set table ~key:symbol ~data:true
-    else raise (Error (Printf.sprintf "You thought you could game the system? Scary 👏 variables 👏 only! 👏. Make this scary: %s\n%!" symbol))
-  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to write some spooky variable names. Names like: %s just aren't going to cut it.\n%!" symbol))
+let rec find_symbol symbol table =
+  let search = Hashtbl.find table.symbols symbol in
+  if search == None then (
+    match table.previous with
+    | None -> None
+    | Some t -> find_symbol symbol t
+  ) else search
 
-let populate_symbol_table (ast:Ast.node) =
-  let symbols = { previous=None; symbols=String.Table.create(); } in
+let rec add_symbol (symbol:Ast.node) table =
+  let symbol_string, declaration = (match symbol with
+  | Ast.FunctionDeclaration s ->
+    let parameters = populate_symbol_table s.parameters ~s:({
+      previous = Some table;
+      symbols = String.Table.create();
+    }) in (
+    s.id,
+    FunctionDeclaration({
+      index = Hashtbl.length table.symbols;
+      parameters;
+      locals = populate_symbol_table s.code ~s:({
+        previous = Some parameters;
+        symbols = String.Table.create();
+      });
+    }))
+  | Ast.VariableDeclaration s -> (s.id, VariableDeclaration(Hashtbl.length table.symbols))
+  ) in
+  if Re2.Regex.matches spooky_words symbol_string then
+    if not(Re2.Regex.matches not_scary_words symbol_string) then
+      Hashtbl.set table.symbols ~key:symbol_string ~data:declaration
+    else raise (Error (Printf.sprintf "You thought you could game the system? Scary 👏 variables 👏 only! 👏. Make this scary: %s\n%!" symbol_string))
+  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to write some spooky variable names. Names like: %s just aren't going to cut it.\n%!" symbol_string))
+
+and populate_symbol_table ?s:(symbols={
+  previous=None;
+  symbols=String.Table.create();
+}) (ast:Ast.node) : symbol_table =
   let rec visit_ast (curr_node:Ast.node) =
     match curr_node with
-    | Ast.FunctionDeclaration syntax ->
-      add_symbol syntax.id symbols.symbols;
-      List.iter ~f:visit_ast syntax.children
-    | Ast.ParamDeclaration syntax ->
-      add_symbol syntax symbols.symbols;  
-    | Ast.VariableDeclaration syntax ->
-      add_symbol syntax.id symbols.symbols;    
-      List.iter ~f:visit_ast syntax.children
+    | Ast.FunctionDeclaration syntax -> add_symbol curr_node symbols
+    | Ast.VariableDeclaration syntax -> add_symbol curr_node symbols
     | Ast.Program syntax -> List.iter ~f:visit_ast syntax.children  
     | Ast.StatementList syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.ParameterList syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.Statement syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.Reference syntax ->
-    if Hashtbl.find symbols.symbols syntax == None then
+    if find_symbol syntax symbols == None then
       raise (Error "Ah! You used a variable before you declared it! I'm so scared!\n")
     | Ast.VariableAssignment syntax ->
-    if Hashtbl.find symbols.symbols syntax.id == None then
+    if find_symbol syntax.id symbols == None then
       raise (Error "And then he... he... He assigned a value to a variable before defining it AHHHHH!\n")
     (* QUESTION: the catchall saves a lot of space, but exhaustiveness would make the code
     more rigorous. Perhaps this is where type refactoring comes into play? at the very least

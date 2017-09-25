@@ -7,6 +7,8 @@ exception Not_enough_op_args of string
 type opcode =
   | PushInt of int
   | IntOperation of int_operation
+  | LoadLocal of int
+  | StoreLocal of int
 and int_operation =
   | AddInts
   | DivideInts
@@ -60,6 +62,8 @@ let opcodes bytes =
     | Some 3 -> Stream.junk bytes; Some (IntOperation(SubtractInts))
     | Some 4 -> Stream.junk bytes; Some (IntOperation(MultiplyInts))
     | Some 5 -> Stream.junk bytes; Some (IntOperation(DivideInts))
+    | Some 6 -> Stream.junk bytes; Some (LoadLocal (consume_operand bytes))
+    | Some 7 -> Stream.junk bytes; Some (StoreLocal (consume_operand bytes))
     | Some op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
   in Stream.from(next_opcode)
 

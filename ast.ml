@@ -86,7 +86,7 @@ let rec print_ast (syntax:node) ?level:(l=0) =
     | Multiplication syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
     | Addition syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
     | Division syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
-    | Subtraction syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
+    | Subtraction syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
     | Negation syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
 
 

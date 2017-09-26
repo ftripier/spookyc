@@ -6,6 +6,7 @@ exception Type_error of string
 let output_byte byte =
     Out_channel.output_binary_int Out_channel.stdout byte
 
+(* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
     match syntax with
     | Ast.Program syntax -> List.iter ~f:(compile_ast symbol_table) syntax.children  
@@ -47,6 +48,7 @@ let rec compile_ast symbol_table syntax =
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")
             | SymbolTable.FunctionDeclaration declaration ->
+                List.iter ~f:(compile_ast symbol_table) syntax.children;
                 output_byte 10;
                 output_byte declaration.index
         ))
@@ -66,7 +68,9 @@ let rec compile_ast symbol_table syntax =
                 output_byte declaration
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "you can't just reassign function bindings, we live in a society")
         ))
-    | Ast.ReturnStatement syntax -> output_byte 11
+    | Ast.ReturnStatement syntax ->
+        List.iter ~f:(compile_ast symbol_table) syntax.children;
+        output_byte 11
     | Ast.Statement syntax -> List.iter ~f:(compile_ast symbol_table) syntax.children
     | Ast.Operator syntax -> 
       match syntax with

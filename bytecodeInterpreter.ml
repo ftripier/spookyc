@@ -31,6 +31,43 @@ and function_declaration = {
   op_codes: opcode list;
 }
 
+let apply_constant_unary_op a op =
+  match a, op with
+  | PushInt a, UnaryOperation op -> (
+    match op with
+    | Negation -> [PushInt(-a)]
+  )
+  | _, _ -> [op; a]
+
+let apply_constant_binary_op a b op =
+  match a, b, op with
+  | PushInt a, PushInt b, BinaryOperation op -> (
+    match op with
+    | AddInts -> [PushInt (a + b)]
+    | DivideInts -> [PushInt(a / b)]
+    | MultiplyInts -> [PushInt(a * b)]
+    | SubtractInts -> [PushInt(a - b)]
+  )
+  | _, _, _ -> [op; a; b]
+
+let constant_folding op_codes =
+  let constant_folded = List.fold_left op_codes ~f:(fun optimized op -> 
+    match optimized, op with
+    | [], op -> [op]
+    | a :: [], op -> apply_constant_unary_op a op
+    | a :: b :: tl, op -> (
+      match op, a, b with
+      | UnaryOperation unop, PushInt inta, _ ->
+        List.append (apply_constant_unary_op a op) (b :: tl)
+      | BinaryOperation binop, PushInt inta, PushInt intb ->
+        List.append (apply_constant_binary_op a b op) tl
+      | _, _, _ -> (op :: a :: b :: tl)
+    )
+  ) ~init:([]:opcode list) in List.rev constant_folded
+
+let optimize_ops op_codes =
+  constant_folding op_codes
+
 class virtual_machine = object(self)
   val mutable functions = Int.Table.create()
   val mutable registers = (Array.create ~len:0 0: int array)
@@ -164,7 +201,7 @@ let rec opcodes bytes =
         symbol = consume_operand bytes;
         num_parameters = consume_operand bytes;
         num_locals = consume_operand bytes;
-        op_codes = (buffer_opcodes (opcodes bytes));
+        op_codes = optimize_ops (buffer_opcodes (opcodes bytes));
       })
     | Some 9 -> Stream.junk bytes; None
     | Some 10 -> Stream.junk bytes; Some (FunctionCall (consume_operand bytes))

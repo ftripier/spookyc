@@ -2,6 +2,20 @@ open Core
 
 exception Undefined_symbol of string
 exception Type_error of string
+exception No_main of string
+
+let add_main_call symbol_table opcodes =
+  let main_func_index = (
+    match SymbolTable.find_symbol "boo!" symbol_table with
+    | None -> raise (No_main "you need to have a function called boo! in your program. That's the point of entry. Sorry, but that's the meme.")
+    | Some dec -> (
+      match dec with 
+        | SymbolTable.VariableDeclaration m -> raise (No_main "you have a global variable called 'boo!'? Yeah we need that to be a function.")
+        | SymbolTable.FunctionDeclaration m -> m.index
+    )
+  ) in
+  let main_call = [10; main_func_index] in
+  List.append opcodes main_call
 
 (* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
@@ -52,7 +66,9 @@ let rec compile_ast symbol_table syntax =
         | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
         | Some declaration -> (
             match declaration with
-            | SymbolTable.VariableDeclaration declaration -> [7; declaration]
+            | SymbolTable.VariableDeclaration declaration -> List.append
+              (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+              [7; declaration]
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "you can't just reassign function bindings, we live in a society")
         ))
     | Ast.ReturnStatement syntax -> List.append
@@ -61,11 +77,21 @@ let rec compile_ast symbol_table syntax =
     | Ast.Statement syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.Operator syntax -> 
       match syntax with
-      | Ast.Multiplication syntax -> [4]
-      | Ast.Addition syntax -> [2] 
-      | Ast.Division syntax -> [5]
-      | Ast.Subtraction syntax -> [3]
-      | Ast.Negation syntax -> [12]
+      | Ast.Multiplication syntax -> List.append
+        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [4]
+      | Ast.Addition syntax -> List.append
+        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [2] 
+      | Ast.Division syntax -> List.append
+        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [5]
+      | Ast.Subtraction syntax -> List.append
+        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [3]
+      | Ast.Negation syntax -> List.append
+        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [12]
 
 let compile filename =
   let input = open_in filename in
@@ -73,7 +99,7 @@ let compile filename =
   try
     let ast = Parser.main Lexer.token filebuf in
     let st = (SymbolTable.populate_symbol_table ast) in
-    BytecodeInterpreter.interpret (Stream.of_list (compile_ast st ast))
+    BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with
   | Lexer.Error msg ->
       Printf.eprintf "%s%!" msg

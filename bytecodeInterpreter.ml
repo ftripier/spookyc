@@ -96,8 +96,10 @@ class virtual_machine = object(self)
       | Negation -> -a
     ) in (result :: tl)
   
-  method push_arguments num_args =
-    let arguments = Array.create ~len:num_args 0 in
+  method push_arguments num_args num_locals =
+    print_int num_args;
+    print_newline();
+    let arguments = Array.create ~len:(num_args + num_locals) 0 in
     let rec pop args_left =
       let index = num_args - args_left in 
       if args_left == 0 then () else (
@@ -111,29 +113,36 @@ class virtual_machine = object(self)
     pop num_args;
     registers <- arguments
 
-  method interpret_opcodes opcodes =
+  method interpret_opcodes opcodes = 
     match Stream.peek opcodes, op_stack with
     | None, [] -> None
     | None, result :: tl -> Some result
     | Some op, _ -> (
       match op with
       | BinaryOperation op ->
+        print_endline "BinOp";
         Stream.junk opcodes;
         op_stack <- (self#binary_op op);
         self#interpret_opcodes opcodes
       | UnaryOperation op ->
+        print_endline "UnOp";      
         Stream.junk opcodes;
         op_stack <- (self#unary_op op);
         self#interpret_opcodes opcodes
       | PushInt op ->
+        print_string "PushInt: ";
+        print_int op;
+        print_newline();
         Stream.junk opcodes;
         op_stack <- (op :: op_stack);
         self#interpret_opcodes opcodes
       | LoadLocal op ->
+        Printf.printf "LoadLocal: %d\n%!" op;      
         Stream.junk opcodes;
         op_stack <- (Array.get registers op) :: op_stack;
         self#interpret_opcodes opcodes
       | StoreLocal op ->
+        Printf.printf "StoreLocal: %d\n%!" op;
         Stream.junk opcodes;
         (match op_stack with
           | [] -> raise (Not_enough_op_args "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
@@ -142,16 +151,24 @@ class virtual_machine = object(self)
             self#interpret_opcodes opcodes
         )
       | Return ->
+        print_endline "Return";
         Stream.junk opcodes;
         (match op_stack with
         | [] -> None
         | a :: tl -> Some a
       )
       | FunctionDeclaration op ->
+        print_endline "FunctionDec";
+        Stream.junk opcodes;      
         self#set_function op;
         self#interpret_opcodes opcodes
-      | EndFunctionDeclaration -> self#interpret_opcodes opcodes
+      | EndFunctionDeclaration ->
+        print_endline "EndFunctionDec";
+        Stream.junk opcodes;      
+        self#interpret_opcodes opcodes
       | FunctionCall op ->
+        Printf.printf "FunctionCall: %d\n%!" op;
+        Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
         match called with
         | None -> raise (What_r_u_doing_lol "can't call a function before you define it")
@@ -159,7 +176,7 @@ class virtual_machine = object(self)
         let old_registers = registers in
         let old_op_stack = op_stack in
         registers <- (Array.create ~len:0 0 : int array);
-        self#push_arguments called.num_parameters;
+        self#push_arguments called.num_parameters called.num_locals;
         let call_result = self#interpret_opcodes (Stream.of_list called.op_codes) in
         op_stack <- old_op_stack;
         registers <- old_registers;
@@ -179,7 +196,7 @@ let consume_operand_pair bytes =
 
 let rec buffer_opcodes ?b:(buffered=[]) ops =
   match Stream.peek ops with
-  | None -> buffered
+  | None -> List.rev buffered
   | Some a ->
     Stream.junk ops;
     buffer_opcodes ~b:(a :: buffered) ops
@@ -197,11 +214,15 @@ let rec opcodes bytes =
     | Some 7 -> Stream.junk bytes; Some (StoreLocal (consume_operand bytes))
     | Some 8 ->
       Stream.junk bytes;
+      let symbol = consume_operand bytes in
+      let num_parameters = consume_operand bytes in
+      let num_locals = consume_operand bytes in
+      let op_codes = optimize_ops (buffer_opcodes (opcodes bytes)) in
       Some (FunctionDeclaration {
-        symbol = consume_operand bytes;
-        num_parameters = consume_operand bytes;
-        num_locals = consume_operand bytes;
-        op_codes = optimize_ops (buffer_opcodes (opcodes bytes));
+        symbol;
+        num_parameters;
+        num_locals;
+        op_codes;
       })
     | Some 9 -> Stream.junk bytes; None
     | Some 10 -> Stream.junk bytes; Some (FunctionCall (consume_operand bytes))

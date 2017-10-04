@@ -213,28 +213,11 @@ let rec opcodes bytes =
 let byte_word_stream_of_channel channel =
   Stream.from (fun _ -> In_channel.input_binary_int channel)
   
-let interpret filename =
+let interpret bytestream =
   let vm = new virtual_machine in
-  In_channel.with_file filename ~f:(fun ic ->(
-    let res = vm#interpret_opcodes (opcodes (byte_word_stream_of_channel ic)) in
-    match res with
-    | None -> print_endline "No result!"
-    | Some res ->
-      print_int res;
-      print_newline()
-  ))
-
-let spec =
-  let open Command.Spec in
-  empty
-  +> anon("filename" %: file)
-
-let command =
-  Command.basic
-    ~summary:"Interpret some scary bytecode!"
-    ~readme:(fun () -> "More detailed information")
-    spec
-    (fun filename () -> interpret filename)
-
-let () =
-  Command.run ~version:"1.0" ~build_info:"RWO" command
+  let res = vm#interpret_opcodes (opcodes bytestream) in
+  match res with
+  | None -> print_endline "No result!"
+  | Some res ->
+    print_int res;
+    print_newline()

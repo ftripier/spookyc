@@ -14,22 +14,26 @@ let add_main_call symbol_table opcodes =
         | SymbolTable.FunctionDeclaration m -> m.index
     )
   ) in
-  let main_call = [10; main_func_index] in
+  let main_call = [Int32.of_int_exn 10; Int32.of_int_exn main_func_index] in
   List.append opcodes main_call
 
 (* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
     match syntax with
-    | Ast.Program syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
-    | Ast.Numeric syntax -> [1; syntax]
-    | Ast.Expression syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+    | Ast.Program syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+    | Ast.Numeric syntax ->
+      let bits = Int64.bits_of_float syntax in
+      let top_bits = Int64.to_int32_exn (Int64.shift_right_logical bits 32) in
+      let bottom_bits = Int64.to_int32_exn (Int64.bit_and bits (Int64.shift_right_logical Int64.max_value 32)) in
+      [(Int32.of_int_exn 1); top_bits; bottom_bits]
+    | Ast.Expression syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.Reference syntax ->
         let declaration = SymbolTable.find_symbol syntax symbol_table in
         (match declaration with
         | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
         | Some declaration -> (
             match declaration with
-            | SymbolTable.VariableDeclaration declaration -> [6; declaration]
+            | SymbolTable.VariableDeclaration declaration -> [Int32.of_int_exn 6; Int32.of_int_exn declaration]
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "call the police they're using a function without calling it in an expression")
         ))
     | Ast.FunctionDeclaration syntax ->
@@ -40,9 +44,9 @@ let rec compile_ast symbol_table syntax =
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "this is actually pretty creepy because this should never ever happen but I guess we thought this function was a variable I don't know what to tell you man")
             | SymbolTable.FunctionDeclaration declaration ->
-              let declarations = [8; declaration.index; (Hashtbl.length declaration.parameters.symbols); (Hashtbl.length declaration.locals.symbols)] in
+              let declarations = [Int32.of_int_exn 8; Int32.of_int_exn declaration.index; Int32.of_int_exn (Hashtbl.length declaration.parameters.symbols); Int32.of_int_exn (Hashtbl.length declaration.locals.symbols)] in
               let code = compile_ast declaration.locals syntax.code in
-              List.append (List.append declarations code) [9]
+              List.append (List.append declarations code) [Int32.of_int_exn 9]
         ))
     | Ast.FunctionCall syntax ->
         let declaration = SymbolTable.find_symbol syntax.id symbol_table in
@@ -52,12 +56,12 @@ let rec compile_ast symbol_table syntax =
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")
             | SymbolTable.FunctionDeclaration declaration -> List.append
-                (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-                [10; declaration.index]
+                (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+                [Int32.of_int_exn 10; Int32.of_int_exn declaration.index]
         ))
-    | Ast.ArgumentList syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
-    | Ast.StatementList syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
-    | Ast.ParameterList syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+    | Ast.ArgumentList syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+    | Ast.StatementList syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+    | Ast.ParameterList syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.VariableDeclaration syntax -> []
     | Ast.ParamDeclaration syntax -> []
     | Ast.VariableAssignment syntax ->
@@ -67,31 +71,31 @@ let rec compile_ast symbol_table syntax =
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> List.append
-              (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-              [7; declaration]
+              (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+              [Int32.of_int_exn 7; Int32.of_int_exn declaration]
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "you can't just reassign function bindings, we live in a society")
         ))
     | Ast.ReturnStatement syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [11]
-    | Ast.Statement syntax -> List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 11]
+    | Ast.Statement syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.Operator syntax -> 
       match syntax with
       | Ast.Multiplication syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [4]
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 4]
       | Ast.Addition syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [2] 
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 2] 
       | Ast.Division syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [5]
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 5]
       | Ast.Subtraction syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [3]
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 3]
       | Ast.Negation syntax -> List.append
-        (List.fold_left syntax.children ~init:([]: int list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
-        [12]
+        (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+        [Int32.of_int_exn 12]
 
 let compile filename =
   let input = open_in filename in

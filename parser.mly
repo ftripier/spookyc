@@ -1,4 +1,4 @@
-%token <int> INT
+%token <float> NUMBER
 %token PLUS MINUS TIMES DIV
 %token LPAREN RPAREN
 %token LBRACE RBRACE
@@ -60,7 +60,7 @@ argument_list:
 | param = expr COMMA p = argument_list {  param :: p }
 
 expr:
-| i = INT
+| i = NUMBER
     { Ast.Numeric i  }
 | id = ID
     { Ast.Reference id }

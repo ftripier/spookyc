@@ -5,9 +5,16 @@
   exception Error of string
 }
 
+let ws    = [' ' '\t']
+let nl    = ['\n']
+let digit = ['0'-'9']
+let digits = digit+
+
 rule token = parse
-| [' ' '\t' '\n'] (* also ignore newlines, not only whitespace and tabs *)
+| ws+
     { token lexbuf }
+| nl
+    { Lexing.new_line lexbuf; token lexbuf }
 | "👻"
     { FUNC }
 | "🤡"
@@ -38,8 +45,8 @@ rule token = parse
     { RBRACE }
 | ['A'-'Z''a'-'z''_''!']['A'-'Z''a'-'z''_''0'-'9''!']*  as id
     { ID (id) }
-| ['0'-'9']+ as i
-    { INT (int_of_string i) }
+| (digits)'.'?(digits)* as i
+    { NUMBER (float_of_string i) }
 | eof
     { EOF }
 | _

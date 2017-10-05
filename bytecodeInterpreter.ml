@@ -6,16 +6,16 @@ exception Not_enough_op_args of string
 exception What_r_u_doing_lol of string
 
 type binary_operation =
-  | AddInts
-  | DivideInts
-  | MultiplyInts
-  | SubtractInts
+  | AddNumeric
+  | DivideNumeric
+  | MultiplyNumeric
+  | SubtractNumeric
 
 type unary_operation =
   | Negation
 
 type opcode =
-  | PushInt of int
+  | PushNumeric of float
   | BinaryOperation of binary_operation
   | LoadLocal of int
   | StoreLocal of int
@@ -33,20 +33,20 @@ and function_declaration = {
 
 let apply_constant_unary_op a op =
   match a, op with
-  | PushInt a, UnaryOperation op -> (
+  | PushNumeric a, UnaryOperation op -> (
     match op with
-    | Negation -> [PushInt(-a)]
+    | Negation -> [PushNumeric(~-. a)]
   )
   | _, _ -> [op; a]
 
 let apply_constant_binary_op a b op =
   match a, b, op with
-  | PushInt a, PushInt b, BinaryOperation op -> (
+  | PushNumeric a, PushNumeric b, BinaryOperation op -> (
     match op with
-    | AddInts -> [PushInt (a + b)]
-    | DivideInts -> [PushInt(a / b)]
-    | MultiplyInts -> [PushInt(a * b)]
-    | SubtractInts -> [PushInt(a - b)]
+    | AddNumeric -> [PushNumeric (a +. b)]
+    | DivideNumeric -> [PushNumeric (a /. b)]
+    | MultiplyNumeric -> [PushNumeric (a *. b)]
+    | SubtractNumeric -> [PushNumeric (a -. b)]
   )
   | _, _, _ -> [op; a; b]
 
@@ -57,9 +57,9 @@ let constant_folding op_codes =
     | a :: [], op -> apply_constant_unary_op a op
     | a :: b :: tl, op -> (
       match op, a, b with
-      | UnaryOperation unop, PushInt inta, _ ->
+      | UnaryOperation unop, PushNumeric inta, _ ->
         List.append (apply_constant_unary_op a op) (b :: tl)
-      | BinaryOperation binop, PushInt inta, PushInt intb ->
+      | BinaryOperation binop, PushNumeric inta, PushNumeric intb ->
         List.append (apply_constant_binary_op a b op) tl
       | _, _, _ -> (op :: a :: b :: tl)
     )
@@ -70,8 +70,8 @@ let optimize_ops op_codes =
 
 class virtual_machine = object(self)
   val mutable functions = Int.Table.create()
-  val mutable registers = (Array.create ~len:0 0: int array)
-  val mutable op_stack = ([] : int list)
+  val mutable registers = ((Array.create ~len:0 0.0): float array)
+  val mutable op_stack = ([] : float list)
 
   method set_function function_dec =
     Hashtbl.set functions ~key:function_dec.symbol ~data:function_dec
@@ -82,10 +82,10 @@ class virtual_machine = object(self)
     | one_op :: [] -> raise (Not_enough_op_args "not enough operator arguments")
     | a :: b :: tl -> let result = (
         match op with
-        | AddInts -> a + b
-        | DivideInts -> a / b
-        | MultiplyInts -> a * b
-        | SubtractInts -> a - b
+        | AddNumeric -> a +. b
+        | DivideNumeric -> a /. b
+        | MultiplyNumeric -> a *. b
+        | SubtractNumeric -> a -. b
       ) in (result :: tl)
   
   method unary_op op =
@@ -93,13 +93,13 @@ class virtual_machine = object(self)
     | [] -> raise (Not_enough_op_args "not enough operator arguments. You just needed one man, come on.")
     | a :: tl -> let result = (
       match op with
-      | Negation -> -a
+      | Negation -> ~-. a
     ) in (result :: tl)
   
   method push_arguments num_args num_locals =
     print_int num_args;
     print_newline();
-    let arguments = Array.create ~len:(num_args + num_locals) 0 in
+    let arguments = Array.create ~len:(num_args + num_locals) 0.0 in
     let rec pop args_left =
       let index = num_args - args_left in 
       if args_left == 0 then () else (
@@ -129,9 +129,9 @@ class virtual_machine = object(self)
         Stream.junk opcodes;
         op_stack <- (self#unary_op op);
         self#interpret_opcodes opcodes
-      | PushInt op ->
-        print_string "PushInt: ";
-        print_int op;
+      | PushNumeric op ->
+        print_string "PushNumeric: ";
+        print_float op;
         print_newline();
         Stream.junk opcodes;
         op_stack <- (op :: op_stack);
@@ -175,7 +175,7 @@ class virtual_machine = object(self)
         | Some called ->
         let old_registers = registers in
         let old_op_stack = op_stack in
-        registers <- (Array.create ~len:0 0 : int array);
+        registers <- (Array.create ~len:0 0.0);
         self#push_arguments called.num_parameters called.num_locals;
         let call_result = self#interpret_opcodes (Stream.of_list called.op_codes) in
         op_stack <- old_op_stack;
@@ -191,6 +191,11 @@ let consume_operand bytes =
     Stream.junk bytes;
     a
 
+let consume_float bytes =
+  let top_bits = Int64.shift_left (Int64.of_int32 (consume_operand bytes)) 32 in
+  let bottom_bits = Int64.of_int32 (consume_operand bytes) in
+  Int64.float_of_bits (Int64.bit_or top_bits bottom_bits)
+
 let consume_operand_pair bytes =
   let a = consume_operand bytes in (a, consume_operand bytes)
 
@@ -205,40 +210,40 @@ let rec opcodes bytes =
   let next_opcode i =
     match Stream.peek bytes with
     | None -> None
-    | Some 1 -> Stream.junk bytes; Some (PushInt (consume_operand bytes))
-    | Some 2 -> Stream.junk bytes; Some (BinaryOperation(AddInts))
-    | Some 3 -> Stream.junk bytes; Some (BinaryOperation(SubtractInts))
-    | Some 4 -> Stream.junk bytes; Some (BinaryOperation(MultiplyInts))
-    | Some 5 -> Stream.junk bytes; Some (BinaryOperation(DivideInts))
-    | Some 6 -> Stream.junk bytes; Some (LoadLocal (consume_operand bytes))
-    | Some 7 -> Stream.junk bytes; Some (StoreLocal (consume_operand bytes))
-    | Some 8 ->
-      Stream.junk bytes;
-      let symbol = consume_operand bytes in
-      let num_parameters = consume_operand bytes in
-      let num_locals = consume_operand bytes in
-      let op_codes = optimize_ops (buffer_opcodes (opcodes bytes)) in
-      Some (FunctionDeclaration {
-        symbol;
-        num_parameters;
-        num_locals;
-        op_codes;
-      })
-    | Some 9 -> Stream.junk bytes; None
-    | Some 10 -> Stream.junk bytes; Some (FunctionCall (consume_operand bytes))
-    | Some 11 -> Stream.junk bytes; Some (Return)
-    | Some 12 -> Stream.junk bytes; Some (UnaryOperation(Negation))
-    | Some op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
+    | Some num -> (
+      match Int32.to_int_exn num with
+        | 1 -> Stream.junk bytes; Some (PushNumeric (consume_float bytes))
+        | 2 -> Stream.junk bytes; Some (BinaryOperation(AddNumeric))
+        | 3 -> Stream.junk bytes; Some (BinaryOperation(SubtractNumeric))
+        | 4 -> Stream.junk bytes; Some (BinaryOperation(MultiplyNumeric))
+        | 5 -> Stream.junk bytes; Some (BinaryOperation(DivideNumeric))
+        | 6 -> Stream.junk bytes; Some (LoadLocal (Int32.to_int_exn (consume_operand bytes)))
+        | 7 -> Stream.junk bytes; Some (StoreLocal (Int32.to_int_exn (consume_operand bytes)))
+        | 8 ->
+          Stream.junk bytes;
+          let symbol = Int32.to_int_exn (consume_operand bytes) in
+          let num_parameters = Int32.to_int_exn (consume_operand bytes) in
+          let num_locals = Int32.to_int_exn (consume_operand bytes) in
+          let op_codes = optimize_ops (buffer_opcodes (opcodes bytes)) in
+          Some (FunctionDeclaration {
+            symbol;
+            num_parameters;
+            num_locals;
+            op_codes;
+          })
+        | 9 -> Stream.junk bytes; None
+        | 10 -> Stream.junk bytes; Some (FunctionCall (Int32.to_int_exn (consume_operand bytes)))
+        | 11 -> Stream.junk bytes; Some (Return)
+        | 12 -> Stream.junk bytes; Some (UnaryOperation(Negation))
+        | op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
+    )
   in Stream.from(next_opcode)
 
-let byte_word_stream_of_channel channel =
-  Stream.from (fun _ -> In_channel.input_binary_int channel)
-  
 let interpret bytestream =
   let vm = new virtual_machine in
   let res = vm#interpret_opcodes (opcodes bytestream) in
   match res with
   | None -> print_endline "No result!"
   | Some res ->
-    print_int res;
+    print_float res;
     print_newline()

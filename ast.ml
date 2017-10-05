@@ -8,7 +8,7 @@ nonterminal nodes to something more semantically informative. *)
 terminal nodes *)
 type node =
   | Program of { children: node list; }
-  | Numeric of int
+  | Numeric of float
   | Reference of string  
   | Expression of { children: node list; }
   | FunctionDeclaration of { id:string; parameters: node; code: node; }
@@ -40,7 +40,7 @@ let serialize_operator n =
 let serialize_node (n: node) =
   match n with
     | Program n -> "Program!\n"  
-    | Numeric n -> Printf.sprintf "Numeric!: %d\n%!" n
+    | Numeric n -> Printf.sprintf "Numeric!: %f\n%!" n
     | Expression n -> "Expression!\n"
     | Reference n -> Printf.sprintf "Reference!: %s\n%!" n
     | Statement n -> "Statement!\n"

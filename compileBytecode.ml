@@ -17,15 +17,24 @@ let add_main_call symbol_table opcodes =
   let main_call = [Int32.of_int_exn 10; Int32.of_int_exn main_func_index] in
   List.append opcodes main_call
 
+let push_spookyval spookyval =
+  match spookyval with
+  | Ast.Numeric syntax ->
+    let bits = Int64.bits_of_float syntax in
+    let top_bits = Int64.to_int32_exn (Int64.shift_right_logical bits 32) in
+    let bottom_bits = Int64.to_int32_exn (Int64.bit_and bits (Int64.shift_right_logical Int64.max_value 32)) in
+    [(Int32.of_int_exn 1); top_bits; bottom_bits]
+  | Ast.Spookystring syntax ->
+    let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
+    let contents = List.map (String.to_list_rev syntax) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
+    List.append instruction contents
+
+
 (* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
     match syntax with
     | Ast.Program syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
-    | Ast.Numeric syntax ->
-      let bits = Int64.bits_of_float syntax in
-      let top_bits = Int64.to_int32_exn (Int64.shift_right_logical bits 32) in
-      let bottom_bits = Int64.to_int32_exn (Int64.bit_and bits (Int64.shift_right_logical Int64.max_value 32)) in
-      [(Int32.of_int_exn 1); top_bits; bottom_bits]
+    | Ast.Spookyval syntax -> push_spookyval syntax
     | Ast.Expression syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.Reference syntax ->
         let declaration = SymbolTable.find_symbol syntax symbol_table in

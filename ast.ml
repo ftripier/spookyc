@@ -6,9 +6,13 @@ to consolidate these duplicate fields/variants *)
 nonterminal nodes to something more semantically informative. *)
 (* TODO: perhaps these types could be factored into nonterminal nodes, and
 terminal nodes *)
+type spookyval =
+  | Numeric of float
+  | Spookystring of string
+
 type node =
   | Program of { children: node list; }
-  | Numeric of float
+  | Spookyval of spookyval
   | Reference of string  
   | Expression of { children: node list; }
   | FunctionDeclaration of { id:string; parameters: node; code: node; }
@@ -37,10 +41,15 @@ let serialize_operator n =
   | Subtraction n -> "Subtraction!\n"
   | Negation n -> "Negation!\n"
 
+let serialize_spookyval n =
+  match n with
+  | Numeric num -> string_of_float num
+  | Spookystring st -> st
+
 let serialize_node (n: node) =
   match n with
     | Program n -> "Program!\n"  
-    | Numeric n -> Printf.sprintf "Numeric!: %f\n%!" n
+    | Spookyval n -> Printf.sprintf "Spookyval!: %s\n%!" (serialize_spookyval n)
     | Expression n -> "Expression!\n"
     | Reference n -> Printf.sprintf "Reference!: %s\n%!" n
     | Statement n -> "Statement!\n"
@@ -66,7 +75,7 @@ let rec print_ast (syntax:node) ?level:(l=0) =
   print_endline (serialize_node syntax);
   match syntax with
   | Program syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children  
-  | Numeric syntax -> ()
+  | Spookyval syntax -> ()
   | Expression syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Reference syntax -> ()
   | FunctionDeclaration syntax ->

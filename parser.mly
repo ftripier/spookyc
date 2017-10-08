@@ -7,6 +7,7 @@
 %token EOF
 %token FUNC
 %token VAR_DEC
+%token <string> STR
 %token RETURN
 %token <string> ID
 %token ASSIGN
@@ -61,7 +62,9 @@ argument_list:
 
 expr:
 | i = NUMBER
-    { Ast.Numeric i  }
+    { Ast.Spookyval(Ast.Numeric i) }
+| s = STR
+    { Ast.Spookyval(Ast.Spookystring s) }
 | id = ID
     { Ast.Reference id }
 | id = ID LPAREN args = argument_list RPAREN {

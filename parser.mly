@@ -32,7 +32,7 @@ declarations:
 | dec = function_declaration decs = declarations { dec :: decs }
 | dec = variable_declaration decs = declarations { dec :: decs }
 
-function_declaration: FUNC id = ID LPAREN plist = parameter_list RPAREN LBRACE statements = statementseq RBRACE {
+function_declaration: FUNC id = ID LPAREN plist = parameter_list LBRACE statements = statementseq RBRACE {
     Ast.FunctionDeclaration {
         id;
         code = Ast.StatementList { children = statements; };
@@ -56,7 +56,8 @@ return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children =
 void_expr: e = expr SEMICOLON { Ast.Expression { children = [e]; } }
 
 parameter_list:
-| param = ID { [ Ast.ParamDeclaration param ] }
+| RPAREN { [] }
+| param = ID RPAREN { [ Ast.ParamDeclaration param ] }
 | param = ID COMMA p = parameter_list {  (Ast.ParamDeclaration param) :: p }
 
 argument_list:

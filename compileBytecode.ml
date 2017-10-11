@@ -28,8 +28,13 @@ let push_spookyval spookyval =
     let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
     let contents = List.map (String.to_list_rev syntax) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
     List.append instruction contents
+  | Ast.Void -> [(Int32.of_int_exn 14)]
 
-
+let call_builtin function_name =
+  match function_name with
+  | "interpreter_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
+  | _ -> raise (Undefined_symbol "That variable doesn't exist! W-What are you doing? AhhHHHHHHHH!")
+  
 (* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
     match syntax with
@@ -60,7 +65,7 @@ let rec compile_ast symbol_table syntax =
     | Ast.FunctionCall syntax ->
         let declaration = SymbolTable.find_symbol syntax.id symbol_table in
         (match declaration with
-        | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
+        | None -> call_builtin syntax.id
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")

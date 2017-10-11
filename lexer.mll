@@ -27,7 +27,9 @@ rule token = parse
 | nl
     { Lexing.new_line lexbuf; token lexbuf }
 | '"'
-    { STR (string (Buffer.create 100) lexbuf) } 
+    { STR (string (Buffer.create 100) lexbuf) }
+| "🌚"
+    { VOID }
 | "👻"
     { FUNC }
 | "🤡"

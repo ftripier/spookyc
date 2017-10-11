@@ -6,6 +6,7 @@
 %token SEMICOLON
 %token EOF
 %token FUNC
+%token VOID
 %token VAR_DEC
 %token <string> STR
 %token RETURN
@@ -47,13 +48,15 @@ statement:
 | stmt = variable_declaration { stmt }
 | stmt = variable_assignment { stmt }
 | stmt = return_statement { stmt }
+| stmt = void_expr { stmt }
 
 variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children=[]; } }
 variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment { id; children = [e]; } }
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
+void_expr: e = expr SEMICOLON { Ast.Expression { children = [e]; } }
 
 parameter_list:
-| param = ID { [ Ast.ParamDeclaration param] }
+| param = ID { [ Ast.ParamDeclaration param ] }
 | param = ID COMMA p = parameter_list {  (Ast.ParamDeclaration param) :: p }
 
 argument_list:
@@ -61,6 +64,8 @@ argument_list:
 | param = expr COMMA p = argument_list {  param :: p }
 
 expr:
+| v = VOID
+    { Ast.Spookyval(Ast.Void) }
 | i = NUMBER
     { Ast.Spookyval(Ast.Numeric i) }
 | s = STR

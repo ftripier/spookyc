@@ -14,6 +14,7 @@ type binary_operation =
 type spookyval =
   | Numeric of float
   | Spookystring of string
+  | Void
 
 type unary_operation =
   | Negation
@@ -27,6 +28,7 @@ type opcode =
   | FunctionDeclaration of function_declaration
   | EndFunctionDeclaration
   | FunctionCall of int
+  | CallBuiltin of int
   | Return
 and function_declaration = {
   symbol: int;
@@ -37,8 +39,15 @@ and function_declaration = {
 
 let print_spookyval spval =
   match spval with
-  | Numeric sp -> print_float sp
-  | Spookystring sp -> print_string sp
+  | Numeric sp ->
+    print_float sp;
+    print_string " "
+  | Spookystring sp ->
+    print_string sp;
+    print_string " "
+  | Void ->
+    print_string "Void";
+    print_string " "    
 
 let apply_unary_op a op =
   match a with
@@ -47,6 +56,7 @@ let apply_unary_op a op =
     | Negation -> (Numeric(~-. anum))
   )
   | Spookystring anum -> raise (What_r_u_doing_lol "Negating strings makes me fear puke!")
+  | Void -> Void
 
 let apply_binary_op a b op =
   match a, b with
@@ -72,6 +82,7 @@ let apply_binary_op a b op =
     | Add -> (Spookystring (a ^ b))
     | _ -> raise (What_r_u_doing_lol "AHHHHHHhhhhHHHHHHHhhhHHHHH! You can't use that operator on a string!!!")
   )
+  | _, _ -> Void
 
 let apply_constant_unary_op a op =
   [PushSpookyvalue (apply_unary_op a op)]
@@ -106,6 +117,19 @@ class virtual_machine = object(self)
   val mutable registers = ((Array.create ~len:0 (Numeric(0.0))): spookyval array)
   val mutable op_stack = ([] : spookyval list)
 
+  method interpreter_scream =
+    match op_stack with
+      | [] -> print_endline "AHHHHHHHHHHHH!"
+      | a :: tl ->
+        print_spookyval a;
+        op_stack <- tl;
+        self#interpreter_scream
+
+  method print_registers =
+    print_string "registers = ";
+    Array.iter ~f:print_spookyval registers;
+    print_newline()
+
   method set_function function_dec =
     Hashtbl.set functions ~key:function_dec.symbol ~data:function_dec
 
@@ -139,9 +163,9 @@ class virtual_machine = object(self)
 
   method interpret_opcodes opcodes = 
     match Stream.peek opcodes, op_stack with
-    | None, [] -> None
-    | None, result :: tl -> Some result
-    | Some op, _ -> (
+    | None, [] -> ()
+    | None, result :: tl -> ()
+    | Some op, _ ->
       match op with
       | BinaryOperation op ->
         print_endline "BinOp";
@@ -176,11 +200,13 @@ class virtual_machine = object(self)
         )
       | Return ->
         print_endline "Return";
+        self#interpreter_scream;
+        self#print_registers;        
         Stream.junk opcodes;
         (match op_stack with
-        | [] -> None
-        | a :: tl -> Some a
-      )
+          | [] -> op_stack <- [Void]
+          | _ -> ()
+        )
       | FunctionDeclaration op ->
         print_endline "FunctionDec";
         Stream.junk opcodes;      
@@ -194,18 +220,24 @@ class virtual_machine = object(self)
         Printf.printf "FunctionCall: %d\n%!" op;
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
-        match called with
+        (match called with
         | None -> raise (What_r_u_doing_lol "can't call a function before you define it")
         | Some called ->
-        let old_registers = registers in
-        let old_op_stack = op_stack in
-        registers <- (Array.create ~len:0 (Numeric 0.0));
-        self#push_arguments called.num_parameters called.num_locals;
-        let call_result = self#interpret_opcodes (Stream.of_list called.op_codes) in
-        op_stack <- old_op_stack;
-        registers <- old_registers;
-        call_result
-    )
+          let old_registers = registers in
+          registers <- Array.create ~len:0 (Numeric 0.0);
+          self#push_arguments called.num_parameters called.num_locals;
+          self#interpret_opcodes (Stream.of_list called.op_codes);
+          registers <- old_registers;
+          self#interpret_opcodes opcodes        
+        )
+      | CallBuiltin op ->
+        Printf.printf "BuiltinCall: %d\n%!" op;
+        Stream.junk opcodes;
+        (match op with
+          | 0 -> self#interpreter_scream
+          | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already pissed myself.")
+        );
+        self#interpret_opcodes opcodes
 end
 
 let int32_to_char i =
@@ -274,15 +306,12 @@ let rec opcodes bytes =
         | 11 -> Stream.junk bytes; Some (Return)
         | 12 -> Stream.junk bytes; Some (UnaryOperation(Negation))
         | 13 -> Stream.junk bytes; Some (PushSpookyvalue (Spookystring (consume_string bytes)))
+        | 14 -> Stream.junk bytes; Some (PushSpookyvalue (Void))
+        | 15 -> Stream.junk bytes; Some (CallBuiltin (Int32.to_int_exn (consume_operand bytes)))
         | op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
     )
   in Stream.from(next_opcode)
 
 let interpret bytestream =
   let vm = new virtual_machine in
-  let res = vm#interpret_opcodes (opcodes bytestream) in
-  match res with
-  | None -> print_endline "No result!"
-  | Some res ->
-    print_spookyval res;
-    print_newline()
+  vm#interpret_opcodes (opcodes bytestream)

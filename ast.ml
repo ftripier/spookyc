@@ -9,6 +9,7 @@ terminal nodes *)
 type spookyval =
   | Numeric of float
   | Spookystring of string
+  | Void
 
 type node =
   | Program of { children: node list; }
@@ -45,6 +46,7 @@ let serialize_spookyval n =
   match n with
   | Numeric num -> string_of_float num
   | Spookystring st -> st
+  | Void -> "Void"
 
 let serialize_node (n: node) =
   match n with

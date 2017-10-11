@@ -116,6 +116,7 @@ let compile filename =
   let filebuf = Lexing.from_channel input in
   try
     let ast = Parser.main Lexer.token filebuf in
+    Ast.print_ast ast;
     let st = (SymbolTable.populate_symbol_table ast) in
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with

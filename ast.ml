@@ -72,7 +72,7 @@ let rec print_level l =
   | 0 -> ""
   | _ -> "    " ^ print_level (l - 1)
 
-let rec print_ast (syntax:node) ?level:(l=0) =
+let rec print_ast ?level:(l=0) (syntax:node) =
   print_string (print_level l);
   print_endline (serialize_node syntax);
   match syntax with

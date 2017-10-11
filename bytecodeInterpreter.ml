@@ -85,10 +85,10 @@ let apply_binary_op a b op =
   | _, _ -> Void
 
 let apply_constant_unary_op a op =
-  [PushSpookyvalue (apply_unary_op a op)]
+  PushSpookyvalue (apply_unary_op a op)
 
 let apply_constant_binary_op a b op =
-  [PushSpookyvalue (apply_binary_op a b op)]
+  PushSpookyvalue (apply_binary_op a b op)
 
 let constant_folding op_codes =
   let constant_folded = List.fold_left op_codes ~f:(fun optimized op -> 
@@ -96,15 +96,15 @@ let constant_folding op_codes =
     | [], op -> [op]
     | a :: [], op -> (
       match op, a with
-      | UnaryOperation unop, PushSpookyvalue vala -> apply_constant_unary_op vala unop
+      | UnaryOperation unop, PushSpookyvalue vala -> [apply_constant_unary_op vala unop]
       | _, _ -> (op :: optimized)
     )
     | a :: b :: tl, op -> (
       match op, a, b with
       | UnaryOperation unop, PushSpookyvalue vala, _ ->
-        List.append (apply_constant_unary_op vala unop) (b :: tl)
+        (apply_constant_unary_op vala unop) :: b :: tl
       | BinaryOperation binop, PushSpookyvalue vala, PushSpookyvalue valb ->
-        List.append (apply_constant_binary_op vala valb binop) tl
+        (apply_constant_binary_op vala valb binop) :: tl
       | _, _, _ -> (op :: optimized)
     )
   ) ~init:([]:opcode list) in List.rev constant_folded
@@ -118,12 +118,13 @@ class virtual_machine = object(self)
   val mutable op_stack = ([] : spookyval list)
 
   method interpreter_scream =
-    match op_stack with
-      | [] -> print_endline "AHHHHHHHHHHHH!"
-      | a :: tl ->
-        print_spookyval a;
-        op_stack <- tl;
-        self#interpreter_scream
+    let rec print_ops ops =
+      (match ops with
+        | [] -> print_endline "AHHHHHHHHHHHH!"
+        | a :: tl ->
+          print_spookyval a;
+          print_ops tl)
+    in print_ops op_stack
 
   method print_registers =
     print_string "registers = ";
@@ -145,8 +146,6 @@ class virtual_machine = object(self)
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
   
   method push_arguments num_args num_locals =
-    print_int num_args;
-    print_newline();
     let arguments = Array.create ~len:(num_args + num_locals) (Numeric 0.0) in
     let rec pop args_left =
       let index = num_args - args_left in 
@@ -170,6 +169,7 @@ class virtual_machine = object(self)
       | BinaryOperation op ->
         print_endline "BinOp";
         Stream.junk opcodes;
+        self#interpreter_scream;
         op_stack <- (self#binary_op op);
         self#interpret_opcodes opcodes
       | UnaryOperation op ->
@@ -183,6 +183,7 @@ class virtual_machine = object(self)
         print_newline();
         Stream.junk opcodes;
         op_stack <- (op :: op_stack);
+        self#interpreter_scream;
         self#interpret_opcodes opcodes
       | LoadLocal op ->
         Printf.printf "LoadLocal: %d\n%!" op;      
@@ -196,6 +197,7 @@ class virtual_machine = object(self)
           | [] -> raise (Not_enough_op_args "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
           | a :: tl ->
             Array.set registers op a;
+            op_stack <- tl;
             self#interpret_opcodes opcodes
         )
       | Return ->
@@ -276,6 +278,32 @@ let rec buffer_opcodes ?b:(buffered=[]) ops =
     Stream.junk ops;
     buffer_opcodes ~b:(a :: buffered) ops
 
+let rec print_opcodes ops =
+  match ops with
+  | [] -> ()
+  | a :: tl -> (
+    match a with
+    | PushSpookyvalue sp ->
+      print_string "SPOOKYVAL PUSH: ";
+      print_spookyval sp;
+      print_newline();
+      print_opcodes tl
+    | BinaryOperation sp ->
+      print_endline "BINOP";
+      print_opcodes tl
+    | LoadLocal sp ->
+      print_string "LOAD LOCAL: ";    
+      print_int sp;
+      print_newline();
+      print_opcodes tl
+    | StoreLocal sp ->
+      print_string "STORE LOCAL: ";    
+      print_int sp;
+      print_newline();
+      print_opcodes tl
+    | _ -> print_opcodes tl
+  )
+
 let rec opcodes bytes =
   let next_opcode i =
     match Stream.peek bytes with
@@ -294,7 +322,14 @@ let rec opcodes bytes =
           let symbol = Int32.to_int_exn (consume_operand bytes) in
           let num_parameters = Int32.to_int_exn (consume_operand bytes) in
           let num_locals = Int32.to_int_exn (consume_operand bytes) in
-          let op_codes = optimize_ops (buffer_opcodes (opcodes bytes)) in
+          let buffered = buffer_opcodes (opcodes bytes) in
+          print_endline "BUFFERED";
+          print_opcodes buffered;
+          print_endline "END_BUFFERED";          
+          let op_codes = optimize_ops buffered in
+          print_endline "OPTIMIZED";
+          print_opcodes op_codes;
+          print_endline "END_OPTIMIZED";    
           Some (FunctionDeclaration {
             symbol;
             num_parameters;

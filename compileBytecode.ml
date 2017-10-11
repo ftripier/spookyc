@@ -65,7 +65,9 @@ let rec compile_ast symbol_table syntax =
     | Ast.FunctionCall syntax ->
         let declaration = SymbolTable.find_symbol syntax.id symbol_table in
         (match declaration with
-        | None -> call_builtin syntax.id
+        | None -> List.append
+          (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+          (call_builtin syntax.id)
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")

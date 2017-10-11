@@ -291,6 +291,9 @@ let rec print_opcodes ops =
     | BinaryOperation sp ->
       print_endline "BINOP";
       print_opcodes tl
+    | UnaryOperation sp ->
+      print_endline "UNOP";
+      print_opcodes tl
     | LoadLocal sp ->
       print_string "LOAD LOCAL: ";    
       print_int sp;
@@ -301,6 +304,19 @@ let rec print_opcodes ops =
       print_int sp;
       print_newline();
       print_opcodes tl
+    | FunctionCall sp ->
+      print_string "FUNCTION CALL: ";
+      print_int sp;
+      print_newline();
+      print_opcodes tl
+    | CallBuiltin sp ->
+      print_string "CALL_BUILTIN: ";
+      print_int sp;
+      print_newline();
+      print_opcodes tl
+    | Return ->
+      print_endline "RETURN";
+      print_opcodes tl      
     | _ -> print_opcodes tl
   )
 

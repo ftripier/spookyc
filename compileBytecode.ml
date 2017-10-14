@@ -33,6 +33,7 @@ let push_spookyval spookyval =
 let call_builtin function_name =
   match function_name with
   | "interpreter_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
+  | "creppy_whispers_from_outside" -> [Int32.of_int_exn 15; Int32.of_int_exn 1]
   | _ -> raise (Undefined_symbol "That variable doesn't exist! W-What are you doing? AhhHHHHHHHH!")
   
 (* TODO: change hardcoded bytecode numbers to constants *)
@@ -118,16 +119,17 @@ let compile filename =
   let filebuf = Lexing.from_channel input in
   try
     let ast = Parser.main Lexer.token filebuf in
-    Ast.print_ast ast;
     let st = (SymbolTable.populate_symbol_table ast) in
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with
-  | Lexer.Error msg ->
+  | Scarrors.Error msg ->
       Printf.eprintf "%s%!" msg
   | Parser.Error ->
-      Printf.eprintf "At offset %d: syntax error.\n%!" (Lexing.lexeme_start filebuf)
+      Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA\n%!" (Scarrors.position filebuf)
   | SymbolTable.Error msg ->
-      Printf.eprintf "%s%!" msg  
+      Printf.eprintf "%s %s\n%!" (Scarrors.position filebuf) msg  
+  | BytecodeInterpreter.What_r_u_doing_lol msg ->
+      Printf.eprintf "%s %s\n%!" (Scarrors.position filebuf) msg
   ;
   close_in input
 

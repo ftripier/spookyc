@@ -1,8 +1,5 @@
 open Core
 
-exception Arithmetic_Error of string
-exception Unrecognized_Opcode of string
-exception Not_enough_op_args of string
 exception What_r_u_doing_lol of string
 
 type binary_operation =
@@ -118,13 +115,16 @@ class virtual_machine = object(self)
   val mutable op_stack = ([] : spookyval list)
 
   method interpreter_scream =
-    let rec print_ops ops =
-      (match ops with
-        | [] -> print_endline "AHHHHHHHHHHHH!"
-        | a :: tl ->
-          print_spookyval a;
-          print_ops tl)
-    in print_ops op_stack
+    match op_stack with
+      | [] -> print_endline "AHHHHHHHHHHHH!"
+      | a :: tl ->
+        print_spookyval a;
+        print_endline "AHHHHHHHHHHHH!";
+        op_stack <- tl
+
+  method creppy_whispers_from_outside =
+    let very_creppy = read_line() in
+      op_stack <- (Spookystring(very_creppy) :: op_stack)
 
   method print_registers =
     print_string "registers = ";
@@ -136,13 +136,13 @@ class virtual_machine = object(self)
 
   method binary_op op =
     match op_stack with
-    | [] -> raise (Not_enough_op_args "not enough operator arguments")
-    | one_op :: [] -> raise (Not_enough_op_args "not enough operator arguments")
+    | [] -> raise (What_r_u_doing_lol "not enough operator arguments")
+    | one_op :: [] -> raise (What_r_u_doing_lol "not enough operator arguments")
     | a :: b :: tl -> let result = (apply_binary_op a b op) in (result :: tl)
   
   method unary_op op =
     match op_stack with
-    | [] -> raise (Not_enough_op_args "not enough operator arguments. You just needed one man, come on.")
+    | [] -> raise (What_r_u_doing_lol "not enough operator arguments. You just needed one man, come on.")
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
   
   method push_arguments num_args num_locals =
@@ -151,7 +151,7 @@ class virtual_machine = object(self)
       let index = num_args - args_left in 
       if args_left == 0 then () else (
       match op_stack with
-      | [] -> raise (Not_enough_op_args "Just one operand oh my god it's not that hard.")
+      | [] -> raise (What_r_u_doing_lol "Just one operand oh my god it's not that hard.")
       | a :: tl ->
         op_stack <- tl;
         Array.set arguments index a;
@@ -167,59 +167,44 @@ class virtual_machine = object(self)
     | Some op, _ ->
       match op with
       | BinaryOperation op ->
-        print_endline "BinOp";
         Stream.junk opcodes;
-        self#interpreter_scream;
         op_stack <- (self#binary_op op);
         self#interpret_opcodes opcodes
-      | UnaryOperation op ->
-        print_endline "UnOp";      
+      | UnaryOperation op ->     
         Stream.junk opcodes;
         op_stack <- (self#unary_op op);
         self#interpret_opcodes opcodes
       | PushSpookyvalue op ->
-        print_string "PushSpookyval: ";
-        print_spookyval op;
-        print_newline();
         Stream.junk opcodes;
         op_stack <- (op :: op_stack);
-        self#interpreter_scream;
         self#interpret_opcodes opcodes
-      | LoadLocal op ->
-        Printf.printf "LoadLocal: %d\n%!" op;      
+      | LoadLocal op ->     
         Stream.junk opcodes;
         op_stack <- (Array.get registers op) :: op_stack;
         self#interpret_opcodes opcodes
       | StoreLocal op ->
-        Printf.printf "StoreLocal: %d\n%!" op;
         Stream.junk opcodes;
         (match op_stack with
-          | [] -> raise (Not_enough_op_args "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
+          | [] -> raise (What_r_u_doing_lol "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
           | a :: tl ->
             Array.set registers op a;
             op_stack <- tl;
             self#interpret_opcodes opcodes
         )
-      | Return ->
-        print_endline "Return";
-        self#interpreter_scream;
-        self#print_registers;        
+      | Return ->       
         Stream.junk opcodes;
         (match op_stack with
           | [] -> op_stack <- [Void]
           | _ -> ()
         )
       | FunctionDeclaration op ->
-        print_endline "FunctionDec";
         Stream.junk opcodes;      
         self#set_function op;
         self#interpret_opcodes opcodes
       | EndFunctionDeclaration ->
-        print_endline "EndFunctionDec";
-        Stream.junk opcodes;      
+        Stream.junk opcodes;
         self#interpret_opcodes opcodes
       | FunctionCall op ->
-        Printf.printf "FunctionCall: %d\n%!" op;
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
         (match called with
@@ -230,13 +215,13 @@ class virtual_machine = object(self)
           self#push_arguments called.num_parameters called.num_locals;
           self#interpret_opcodes (Stream.of_list called.op_codes);
           registers <- old_registers;
-          self#interpret_opcodes opcodes        
+          self#interpret_opcodes opcodes      
         )
       | CallBuiltin op ->
-        Printf.printf "BuiltinCall: %d\n%!" op;
         Stream.junk opcodes;
         (match op with
           | 0 -> self#interpreter_scream
+          | 1 -> self#creppy_whispers_from_outside
           | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already pissed myself.")
         );
         self#interpret_opcodes opcodes
@@ -247,7 +232,7 @@ let int32_to_char i =
 
 let consume_operand bytes =
   match Stream.peek bytes with
-  | None -> raise (Not_enough_op_args "not enough operator arguments")
+  | None -> raise (What_r_u_doing_lol "not enough operator arguments")
   | Some a ->
     Stream.junk bytes;
     a
@@ -338,14 +323,8 @@ let rec opcodes bytes =
           let symbol = Int32.to_int_exn (consume_operand bytes) in
           let num_parameters = Int32.to_int_exn (consume_operand bytes) in
           let num_locals = Int32.to_int_exn (consume_operand bytes) in
-          let buffered = buffer_opcodes (opcodes bytes) in
-          print_endline "BUFFERED";
-          print_opcodes buffered;
-          print_endline "END_BUFFERED";          
+          let buffered = buffer_opcodes (opcodes bytes) in     
           let op_codes = optimize_ops buffered in
-          print_endline "OPTIMIZED";
-          print_opcodes op_codes;
-          print_endline "END_OPTIMIZED";    
           Some (FunctionDeclaration {
             symbol;
             num_parameters;
@@ -359,7 +338,7 @@ let rec opcodes bytes =
         | 13 -> Stream.junk bytes; Some (PushSpookyvalue (Spookystring (consume_string bytes)))
         | 14 -> Stream.junk bytes; Some (PushSpookyvalue (Void))
         | 15 -> Stream.junk bytes; Some (CallBuiltin (Int32.to_int_exn (consume_operand bytes)))
-        | op -> raise (Unrecognized_Opcode (Printf.sprintf "couldn't recognize op: %i%!" op))
+        | op -> raise (What_r_u_doing_lol (Printf.sprintf "couldn't recognize op: %i%!" op))
     )
   in Stream.from(next_opcode)
 

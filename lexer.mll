@@ -1,25 +1,12 @@
 {
   open Parser
   open Core
-
-  exception Error of string
-
-  let position lexbuf =
-    let p = lexbuf.Lexing.lex_curr_p in
-        Printf.sprintf "%d:%d" 
-        p.Lexing.pos_lnum (p.Lexing.pos_cnum - p.Lexing.pos_bol)
-
-  let error lexbuf fmt = 
-      Printf.ksprintf (fun msg -> 
-          raise (Error ((position lexbuf)^" "^msg))) fmt
 }
 
 let ws    = [' ' '\t']
 let nl    = '\n'
 let digit = ['0'-'9']
 let digits = digit+
-
-
 
 rule token = parse
 | ws+
@@ -65,7 +52,7 @@ rule token = parse
 | eof
     { EOF }
 | _
-    { error lexbuf "Eek! This text is too scary to lex: %s." @@ Lexing.lexeme lexbuf }
+    { Scarerrors.error lexbuf "Eek! This text is too scary to lex: %s.\n" @@ Lexing.lexeme lexbuf }
 
 and string buf = parse
 | [^'"' '\n' '\\']+  
@@ -88,6 +75,6 @@ and string buf = parse
 | '"'
   { Buffer.contents buf }
 | eof
-  { error lexbuf "AHHHH! You forgot to close a string! We're so scared that we crashed!" }
+  { Scarerrors.error lexbuf "AHHHH! You forgot to close a string! We're so scared that we crashed!\n" }
 | _
-  { error lexbuf "I'm gonna pass out! We found some crazy ass character inside of a string! It looks like: %s! Kill it!" @@ Lexing.lexeme lexbuf }
+  { Scarerrors.error lexbuf "I'm gonna pass out! We found some crazy ass character inside of a string! It looks like: %s! Kill it!\n" @@ Lexing.lexeme lexbuf }

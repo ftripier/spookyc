@@ -61,7 +61,8 @@ parameter_list:
 | param = ID COMMA p = parameter_list {  (Ast.ParamDeclaration param) :: p }
 
 argument_list:
-| param = expr { [param] }
+| RPAREN { [] }
+| param = expr RPAREN { [param] }
 | param = expr COMMA p = argument_list {  param :: p }
 
 expr:
@@ -73,7 +74,7 @@ expr:
     { Ast.Spookyval(Ast.Spookystring s) }
 | id = ID
     { Ast.Reference id }
-| id = ID LPAREN args = argument_list RPAREN {
+| id = ID LPAREN args = argument_list {
     Ast.FunctionCall {
         id;
         children=[

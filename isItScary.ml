@@ -34,7 +34,7 @@ let spooky_words = create_spooky_words_regex [
 
 let not_scary_words = create_spooky_words_regex (* these words arent spooky but code reuse lol *) [
   "not";
-  "isnt";
+  "isn(')?t";
 ]
 
 let its_scary str =

@@ -122,14 +122,14 @@ let compile filename =
     let st = (SymbolTable.populate_symbol_table ast) in
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with
-  | Scarrors.Error msg ->
+  | Scarerrors.Error msg ->
       Printf.eprintf "%s%!" msg
   | Parser.Error ->
-      Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA\n%!" (Scarrors.position filebuf)
+      Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->
-      Printf.eprintf "%s %s\n%!" (Scarrors.position filebuf) msg  
+      Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg  
   | BytecodeInterpreter.What_r_u_doing_lol msg ->
-      Printf.eprintf "%s %s\n%!" (Scarrors.position filebuf) msg
+      Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg
   ;
   close_in input
 

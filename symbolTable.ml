@@ -96,7 +96,7 @@ let rec add_symbol (symbol:Ast.node) table =
   ) in
   if IsItScary.its_scary symbol_string then
       Hashtbl.set table.symbols ~key:symbol_string ~data:declaration
-  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to use spooky variable names. Names like: %s just aren't going to cut it.\n%!" symbol_string))
+  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to use spooky variable names. Names like: %s just aren't going to cut it.%!" symbol_string))
 
 and populate_symbol_table ?s:(symbols={
   previous=None;
@@ -112,10 +112,10 @@ and populate_symbol_table ?s:(symbols={
     | Ast.Statement syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.Reference syntax ->
     if find_symbol syntax symbols == None then
-      raise (Error "Ah! You used a variable before you declared it! I'm so scared!\n")
+      raise (Error "Ah! You used a variable before you declared it! I'm so scared!")
     | Ast.VariableAssignment syntax ->
     if find_symbol syntax.id symbols == None then
-      raise (Error "Ah the terror, the variable you though was defined was actually a ghost.\n")
+      raise (Error "Ah the terror, the variable you thought was defined was actually a ghost.")
     (* QUESTION: the catchall saves a lot of space, but exhaustiveness would make the code
     more rigorous. Perhaps this is where type refactoring comes into play? at the very least
     the distinction between nonterminals and terminals seems important *)

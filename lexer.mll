@@ -52,7 +52,7 @@ rule token = parse
 | eof
     { EOF }
 | _
-    { Scarerrors.error lexbuf "Eek! This text is too scary to lex: %s.\n" @@ Lexing.lexeme lexbuf }
+    { Scarerrors.error lexbuf "Eek! This text is too scary to lex: %s." @@ Lexing.lexeme lexbuf }
 
 and string buf = parse
 | [^'"' '\n' '\\']+  
@@ -75,6 +75,6 @@ and string buf = parse
 | '"'
   { Buffer.contents buf }
 | eof
-  { Scarerrors.error lexbuf "AHHHH! You forgot to close a string! We're so scared that we crashed!\n" }
+  { Scarerrors.error lexbuf "AHHHH! You forgot to close a string! We're so scared that we crashed!" }
 | _
-  { Scarerrors.error lexbuf "I'm so scared I'm gonna pass out. This was in your string %s. It was too scary to lex.\n" @@ Lexing.lexeme lexbuf }
+  { Scarerrors.error lexbuf "I'm so scared I'm gonna pass out. This was in your string %s. It was too scary to lex." @@ Lexing.lexeme lexbuf }

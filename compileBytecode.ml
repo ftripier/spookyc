@@ -9,8 +9,9 @@ let add_main_call symbol_table opcodes =
     match SymbolTable.find_symbol "boo!" symbol_table with
     | None -> raise (No_main "You need to have a function called boo! in your program. That's the point of entry. Sorry, but that's the meme.")
     | Some dec -> (
-      match dec with 
-        | SymbolTable.VariableDeclaration m -> raise (No_main "you have a global variable called 'boo!'? Yeah we need that to be a function.")
+      match dec with
+        | SymbolTable.GlobalVariableDeclaration m -> raise (No_main "I'm very scared of your variable that's declared over this language's point of entry. Ahh! If only it were a function. Then I wouldn't be too scared to compile this program.")      
+        | SymbolTable.VariableDeclaration m -> raise (No_main "I'm very scared of your variable that's declared over this language's point of entry. Ahh! If only it were a function. Then I wouldn't be too scared to compile this program.")
         | SymbolTable.FunctionDeclaration m -> m.index
     )
   ) in
@@ -34,7 +35,7 @@ let call_builtin function_name =
   match function_name with
   | "interpreter_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
   | "creppy_whispers_from_outside" -> [Int32.of_int_exn 15; Int32.of_int_exn 1]
-  | _ -> raise (Undefined_symbol "That variable doesn't exist! W-What are you doing? AhhHHHHHHHH!")
+  | _ -> raise (Undefined_symbol "Ahhhh! That variable you thought existed actually didn't.")
   
 (* TODO: change hardcoded bytecode numbers to constants *)
 let rec compile_ast symbol_table syntax =
@@ -45,17 +46,17 @@ let rec compile_ast symbol_table syntax =
     | Ast.Reference syntax ->
         let declaration = SymbolTable.find_symbol syntax symbol_table in
         (match declaration with
-        | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
+        | None -> raise (Undefined_symbol "You referenced an alien, strange variable outside the domain of my understanding. That makes me scared! When I get scared I don't compile things. Sorry!")
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> [Int32.of_int_exn 6; Int32.of_int_exn declaration]
             | SymbolTable.GlobalVariableDeclaration declaration -> [Int32.of_int_exn 16; Int32.of_int_exn declaration]            
-            | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "call the police they're using a function without calling it in an expression")
+            | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "Too scary for this compiler - you used a function reference in an expression! You lunatic! No compiling.")
         ))
     | Ast.FunctionDeclaration syntax ->
         let declaration = SymbolTable.find_symbol syntax.id symbol_table in
         (match declaration with
-        | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
+        | None -> raise (Undefined_symbol "You referenced an alien, strange function outside the domain of my understanding. That makes me scared! When I get scared I don't compile things. Sorry!")
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "this is actually pretty creepy because this should never ever happen but I guess we thought this function was a variable I don't know what to tell you man")
@@ -78,8 +79,8 @@ let rec compile_ast symbol_table syntax =
           (call_builtin syntax.id)
         | Some declaration -> (
             match declaration with
-            | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")
-            | SymbolTable.GlobalVariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")    
+            | SymbolTable.VariableDeclaration declaration -> raise (Type_error "The variable you thought was a function, you remorseless psychopath, was only a variable. You can't invoke it! No compiling.")
+            | SymbolTable.GlobalVariableDeclaration declaration -> raise (Type_error "The variable you thought was a function, you remorseless psychopath, was only a variable. You can't invoke it! No compiling.") 
             | SymbolTable.FunctionDeclaration declaration -> List.append
                 (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
                 [Int32.of_int_exn 10; Int32.of_int_exn declaration.index]
@@ -92,7 +93,7 @@ let rec compile_ast symbol_table syntax =
     | Ast.VariableAssignment syntax ->
         let declaration = SymbolTable.find_symbol syntax.id symbol_table in
         (match declaration with
-        | None -> raise (Undefined_symbol "a reference to a *ghost* variable!")
+        | None -> raise (Undefined_symbol "You referenced an alien, strange variable outside the domain of my understanding. That makes me scared! When I get scared I don't compile things. Sorry!")
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> List.append
@@ -101,7 +102,7 @@ let rec compile_ast symbol_table syntax =
             | SymbolTable.GlobalVariableDeclaration declaration -> List.append
               (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
               [Int32.of_int_exn 17; Int32.of_int_exn declaration]             
-            | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "you can't just reassign function bindings, we live in a society")
+            | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "You can't just reassign function bindings, we live in a society. Barbaric disrespect scares me, and then I get too busy fear-puking to compile programs. Whoops!")
         ))
     | Ast.ReturnStatement syntax -> List.append
         (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
@@ -134,7 +135,7 @@ let compile filename =
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with
   | Scarerrors.Error msg ->
-      Printf.eprintf "%s%!" msg
+      Printf.eprintf "%s\n%!" msg
   | Parser.Error ->
       Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA!\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->

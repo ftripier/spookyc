@@ -54,7 +54,7 @@ let apply_unary_op a op =
     match op with
     | Negation -> (Numeric(~-. anum))
   )
-  | Spookystring anum -> raise (What_r_u_doing_lol "Negating strings makes me fear puke!")
+  | Spookystring anum -> raise (What_r_u_doing_lol "Eek! You tried to negate a string! What does that even mean? This program is done.")
   | Void -> Void
 
 let apply_binary_op a b op =
@@ -69,17 +69,17 @@ let apply_binary_op a b op =
   | Numeric a, Spookystring b -> (
     match op with
     | Add -> (Spookystring ((string_of_float a) ^ b))
-    | _ -> raise (What_r_u_doing_lol "AHHHHHHhhhhHHHHHHHhhhHHHHH! You can't use that operator on a string!!!")
+    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
   )
   | Spookystring a, Numeric b -> (
     match op with
     | Add -> (Spookystring (a ^ (string_of_float b)))
-    | _ -> raise (What_r_u_doing_lol "AHHHHHHhhhhHHHHHHHhhhHHHHH! You can't use that operator on a string!!!")
+    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
   )
   | Spookystring a, Spookystring b -> (
     match op with
     | Add -> (Spookystring (a ^ b))
-    | _ -> raise (What_r_u_doing_lol "AHHHHHHhhhhHHHHHHHhhhHHHHH! You can't use that operator on a string!!!")
+    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
   )
   | _, _ -> Void
 
@@ -147,13 +147,13 @@ class virtual_machine = object(self)
 
   method binary_op op =
     match op_stack with
-    | [] -> raise (What_r_u_doing_lol "not enough operator arguments")
-    | one_op :: [] -> raise (What_r_u_doing_lol "not enough operator arguments")
+    | [] -> raise (What_r_u_doing_lol "There weren't enough operands for this operation. How is this possible when our parser demands operator satisfaction? Who knows. Still seems like your fault. Program crashing because 2 spooky, you know the meme.")
+    | one_op :: [] -> raise (What_r_u_doing_lol "There weren't enough operands for this operation. How is this possible when our parser demands operator satisfaction? Who knows. Still seems like your fault. Program crashing because 2 spooky, you know the meme.")
     | a :: b :: tl -> let result = (apply_binary_op a b op) in (result :: tl)
   
   method unary_op op =
     match op_stack with
-    | [] -> raise (What_r_u_doing_lol "not enough operator arguments. You just needed one man, come on.")
+    | [] -> raise (What_r_u_doing_lol "There weren't enough operands for this... unary op. You just needed one man, come on. Gotta do the meme: So scared! Crashing the program!")
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
   
   method push_arguments num_args num_locals =
@@ -196,7 +196,7 @@ class virtual_machine = object(self)
       | StoreLocal op ->
         Stream.junk opcodes;
         (match op_stack with
-          | [] -> raise (What_r_u_doing_lol "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
+          | [] -> raise (What_r_u_doing_lol "Oh no! A skeleton thief stole the only argument you were supposed to pass to the storeLocal op! I'm joking. You made a mistake. Mistakes scare me! That makes programs crash! Boom.")
           | a :: tl ->
             Array.set registers op a;
             op_stack <- tl;
@@ -209,7 +209,7 @@ class virtual_machine = object(self)
       | StoreGlobal op ->
         Stream.junk opcodes;
         (match op_stack with
-          | [] -> raise (What_r_u_doing_lol "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
+          | [] -> raise (What_r_u_doing_lol "Oh no! A skeleton thief stole the only argument you were supposed to pass to the storeGlobal op! I'm joking. You made a mistake. Mistakes scare me! That makes programs crash! Boom.")
           | a :: tl ->
             self#set_global op a;
             op_stack <- tl;
@@ -232,7 +232,7 @@ class virtual_machine = object(self)
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
         (match called with
-        | None -> raise (What_r_u_doing_lol "can't call a function before you define it")
+        | None -> raise (What_r_u_doing_lol "Can't call a function before you define it. This should've been caught in the parser, which actually does scare me. Please tweet me at @FelixTripier if you see this. Thank you!")
         | Some called ->
           let old_registers = registers in
           registers <- Array.create ~len:0 Void;
@@ -246,7 +246,7 @@ class virtual_machine = object(self)
         (match op with
           | 0 -> self#interpreter_scream
           | 1 -> self#creppy_whispers_from_outside
-          | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already pissed myself.")
+          | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
         );
         self#interpret_opcodes opcodes
 end
@@ -256,7 +256,7 @@ let int32_to_char i =
 
 let consume_operand bytes =
   match Stream.peek bytes with
-  | None -> raise (What_r_u_doing_lol "not enough operator arguments")
+  | None -> raise (What_r_u_doing_lol "Your bytestream ended early.. the suspense is terrifying! We're just going to crash the program.")
   | Some a ->
     Stream.junk bytes;
     a
@@ -374,7 +374,7 @@ let rec opcodes bytes =
         | 15 -> Stream.junk bytes; Some (CallBuiltin (Int32.to_int_exn (consume_operand bytes)))
         | 16 -> Stream.junk bytes; Some (LoadGlobal (Int32.to_int_exn (consume_operand bytes)))
         | 17 -> Stream.junk bytes; Some (StoreGlobal (Int32.to_int_exn (consume_operand bytes)))
-        | op -> raise (What_r_u_doing_lol (Printf.sprintf "couldn't recognize op: %i%!" op))
+        | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)
 

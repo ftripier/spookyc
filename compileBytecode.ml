@@ -26,7 +26,7 @@ let push_spookyval spookyval =
     [(Int32.of_int_exn 1); top_bits; bottom_bits]
   | Ast.Spookystring syntax ->
     let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
-    let contents = List.map (String.to_list_rev syntax) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
+    let contents = List.map (List.rev (String.to_list_rev syntax)) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
     List.append instruction contents
   | Ast.Void -> [(Int32.of_int_exn 14)]
 
@@ -119,6 +119,7 @@ let compile filename =
   let filebuf = Lexing.from_channel input in
   try
     let ast = Parser.main Lexer.token filebuf in
+    Ast.print_ast ast;
     let st = (SymbolTable.populate_symbol_table ast) in
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with

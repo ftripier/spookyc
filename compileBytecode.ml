@@ -7,7 +7,7 @@ exception No_main of string
 let add_main_call symbol_table opcodes =
   let main_func_index = (
     match SymbolTable.find_symbol "boo!" symbol_table with
-    | None -> raise (No_main "you need to have a function called boo! in your program. That's the point of entry. Sorry, but that's the meme.")
+    | None -> raise (No_main "You need to have a function called boo! in your program. That's the point of entry. Sorry, but that's the meme.")
     | Some dec -> (
       match dec with 
         | SymbolTable.VariableDeclaration m -> raise (No_main "you have a global variable called 'boo!'? Yeah we need that to be a function.")
@@ -49,6 +49,7 @@ let rec compile_ast symbol_table syntax =
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> [Int32.of_int_exn 6; Int32.of_int_exn declaration]
+            | SymbolTable.GlobalVariableDeclaration declaration -> [Int32.of_int_exn 16; Int32.of_int_exn declaration]            
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "call the police they're using a function without calling it in an expression")
         ))
     | Ast.FunctionDeclaration syntax ->
@@ -58,8 +59,14 @@ let rec compile_ast symbol_table syntax =
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "this is actually pretty creepy because this should never ever happen but I guess we thought this function was a variable I don't know what to tell you man")
+            | SymbolTable.GlobalVariableDeclaration declaration -> raise (Type_error "this is actually pretty creepy because this should never ever happen but I guess we thought this function was a variable I don't know what to tell you man")            
             | SymbolTable.FunctionDeclaration declaration ->
-              let declarations = [Int32.of_int_exn 8; Int32.of_int_exn declaration.index; Int32.of_int_exn (Hashtbl.length declaration.parameters.symbols); Int32.of_int_exn (Hashtbl.length declaration.locals.symbols)] in
+              let declarations = [
+                Int32.of_int_exn 8;
+                Int32.of_int_exn declaration.index;
+                Int32.of_int_exn (Hashtbl.length declaration.parameters.symbols);
+                Int32.of_int_exn (Hashtbl.length declaration.locals.symbols)
+              ] in
               let code = compile_ast declaration.locals syntax.code in
               List.append (List.append declarations code) [Int32.of_int_exn 9]
         ))
@@ -72,6 +79,7 @@ let rec compile_ast symbol_table syntax =
         | Some declaration -> (
             match declaration with
             | SymbolTable.VariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")
+            | SymbolTable.GlobalVariableDeclaration declaration -> raise (Type_error "you tried to invoke a regular variable, like a... Like a warlock.")    
             | SymbolTable.FunctionDeclaration declaration -> List.append
                 (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
                 [Int32.of_int_exn 10; Int32.of_int_exn declaration.index]
@@ -90,6 +98,9 @@ let rec compile_ast symbol_table syntax =
             | SymbolTable.VariableDeclaration declaration -> List.append
               (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
               [Int32.of_int_exn 7; Int32.of_int_exn declaration]
+            | SymbolTable.GlobalVariableDeclaration declaration -> List.append
+              (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
+              [Int32.of_int_exn 17; Int32.of_int_exn declaration]             
             | SymbolTable.FunctionDeclaration declaration -> raise (Type_error "you can't just reassign function bindings, we live in a society")
         ))
     | Ast.ReturnStatement syntax -> List.append
@@ -119,14 +130,13 @@ let compile filename =
   let filebuf = Lexing.from_channel input in
   try
     let ast = Parser.main Lexer.token filebuf in
-    Ast.print_ast ast;
     let st = (SymbolTable.populate_symbol_table ast) in
     BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
   with
   | Scarerrors.Error msg ->
       Printf.eprintf "%s%!" msg
   | Parser.Error ->
-      Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA\n%!" (Scarerrors.position filebuf)
+      Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA!\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->
       Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg  
   | BytecodeInterpreter.What_r_u_doing_lol msg ->
@@ -142,7 +152,7 @@ let spec =
 let command =
   Command.basic
   ~summary:"The Spooky language compiler"
-  ~readme:(fun () -> "TODO")
+  ~readme:(fun () -> "The world's first scary-complete language.")
   spec
   (fun filename () -> compile filename)
 

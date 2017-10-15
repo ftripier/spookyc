@@ -4,6 +4,7 @@ open Core
 type symbol_table = { previous: symbol_table option; symbols: declaration String.Table.t; }
 and declaration =
 | VariableDeclaration of int
+| GlobalVariableDeclaration of int
 | FunctionDeclaration of {
   index: int;
   parameters: symbol_table;
@@ -11,6 +12,34 @@ and declaration =
 }
 
 exception Error of string
+
+let count_symbols test_symbol table =
+  let num_symbols = ref 0 in
+  Hashtbl.iter_vals table.symbols ~f:(
+    fun a -> if test_symbol a then num_symbols := !num_symbols + 1
+  );
+  !num_symbols
+
+let number_of_globals table =
+  count_symbols (fun dec -> (
+    match dec with
+    | GlobalVariableDeclaration dec -> true
+    | _ -> false
+  )) table
+
+let number_of_functions table =
+  count_symbols (fun dec -> (
+    match dec with
+    | FunctionDeclaration dec -> true
+    | _ -> false
+  )) table
+
+let number_of_variables table =
+  count_symbols (fun dec -> (
+    match dec with
+    | VariableDeclaration dec -> true
+    | _ -> false
+  )) table
 
 let rec print_table ?level:(l=0) table =
   Hashtbl.iter_keys table.symbols ~f:(
@@ -24,6 +53,9 @@ let rec print_table ?level:(l=0) table =
           print_endline a;
           print_table ~level:(l+1) dec.parameters;
           print_table ~level:(l+1) dec.locals;
+        | GlobalVariableDeclaration dec ->
+          print_string (Ast.print_level l);
+          print_endline a;
         | VariableDeclaration dec ->
           print_string (Ast.print_level l);
           print_endline a;
@@ -47,18 +79,24 @@ let rec add_symbol (symbol:Ast.node) table =
     }) in (
     s.id,
     FunctionDeclaration({
-      index = Hashtbl.length table.symbols;
+      index = number_of_functions table;
       parameters;
       locals = populate_symbol_table s.code ~s:({
         previous = Some parameters;
         symbols = String.Table.create();
       });
     }))
-  | Ast.VariableDeclaration s -> (s.id, VariableDeclaration(Hashtbl.length table.symbols))
+  | Ast.VariableDeclaration s ->
+    (match table.previous with
+      | None ->
+        (s.id, GlobalVariableDeclaration(number_of_variables table))
+      | Some table ->
+        (s.id, VariableDeclaration(number_of_globals table))    
+    )
   ) in
   if IsItScary.its_scary symbol_string then
       Hashtbl.set table.symbols ~key:symbol_string ~data:declaration
-  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to write some spooky variable names. Names like: %s just aren't going to cut it.\n%!" symbol_string))
+  else raise (Error (Printf.sprintf "Look, if you want to program here, you're going to have to use spooky variable names. Names like: %s just aren't going to cut it.\n%!" symbol_string))
 
 and populate_symbol_table ?s:(symbols={
   previous=None;
@@ -77,7 +115,7 @@ and populate_symbol_table ?s:(symbols={
       raise (Error "Ah! You used a variable before you declared it! I'm so scared!\n")
     | Ast.VariableAssignment syntax ->
     if find_symbol syntax.id symbols == None then
-      raise (Error "And then he... he... He assigned a value to a variable before defining it AHHHHH!\n")
+      raise (Error "Ah the terror, the variable you though was defined was actually a ghost.\n")
     (* QUESTION: the catchall saves a lot of space, but exhaustiveness would make the code
     more rigorous. Perhaps this is where type refactoring comes into play? at the very least
     the distinction between nonterminals and terminals seems important *)

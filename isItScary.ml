@@ -30,9 +30,14 @@ let spooky_words = create_spooky_words_regex [
   "dead";
   "A+(!+)?";
   "A+H+(!+)?";
+  "frankenstein";
+  "mad";
+  "crazy";
+  "pyscho";
+  "killer";
 ]
 
-let not_scary_words = create_spooky_words_regex (* these words arent spooky but code reuse lol *) [
+let not_scary_words = create_spooky_words_regex (* these words arent spooky, but code reuse *) [
   "not";
   "isn(')?t";
 ]

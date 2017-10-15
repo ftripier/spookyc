@@ -77,4 +77,4 @@ and string buf = parse
 | eof
   { Scarerrors.error lexbuf "AHHHH! You forgot to close a string! We're so scared that we crashed!\n" }
 | _
-  { Scarerrors.error lexbuf "I'm gonna pass out! We found some crazy ass character inside of a string! It looks like: %s! Kill it!\n" @@ Lexing.lexeme lexbuf }
+  { Scarerrors.error lexbuf "I'm so scared I'm gonna pass out. This was in your string %s. It was too scary to lex.\n" @@ Lexing.lexeme lexbuf }

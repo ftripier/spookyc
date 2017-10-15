@@ -21,6 +21,8 @@ type opcode =
   | BinaryOperation of binary_operation
   | LoadLocal of int
   | StoreLocal of int
+  | LoadGlobal of int
+  | StoreGlobal of int
   | UnaryOperation of unary_operation
   | FunctionDeclaration of function_declaration
   | EndFunctionDeclaration
@@ -111,7 +113,8 @@ let optimize_ops op_codes =
 
 class virtual_machine = object(self)
   val mutable functions = Int.Table.create()
-  val mutable registers = ((Array.create ~len:0 (Numeric(0.0))): spookyval array)
+  val mutable globals = Int.Table.create()
+  val mutable registers = ((Array.create ~len:0 (Void)): spookyval array)
   val mutable op_stack = ([] : spookyval list)
 
   method interpreter_scream =
@@ -134,6 +137,14 @@ class virtual_machine = object(self)
   method set_function function_dec =
     Hashtbl.set functions ~key:function_dec.symbol ~data:function_dec
 
+  method set_global global_dec spookyval =
+    Hashtbl.set globals ~key:global_dec ~data:spookyval
+
+  method get_global global_dec =
+    match Hashtbl.find globals global_dec with
+      | None -> Void
+      | Some spookyval -> spookyval
+
   method binary_op op =
     match op_stack with
     | [] -> raise (What_r_u_doing_lol "not enough operator arguments")
@@ -146,7 +157,7 @@ class virtual_machine = object(self)
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
   
   method push_arguments num_args num_locals =
-    let arguments = Array.create ~len:(num_args + num_locals) (Numeric 0.0) in
+    let arguments = Array.create ~len:(num_args + num_locals) (Void) in
     let rec pop args_left =
       let index = num_args - args_left in 
       if args_left == 0 then () else (
@@ -191,6 +202,19 @@ class virtual_machine = object(self)
             op_stack <- tl;
             self#interpret_opcodes opcodes
         )
+      | LoadGlobal op ->     
+        Stream.junk opcodes;
+        op_stack <- (self#get_global op) :: op_stack;
+        self#interpret_opcodes opcodes
+      | StoreGlobal op ->
+        Stream.junk opcodes;
+        (match op_stack with
+          | [] -> raise (What_r_u_doing_lol "Oh no! A fairy thief stole the only argument you were supposed to pass to the storeLocal op!")
+          | a :: tl ->
+            self#set_global op a;
+            op_stack <- tl;
+            self#interpret_opcodes opcodes
+        )
       | Return ->       
         Stream.junk opcodes;
         (match op_stack with
@@ -211,7 +235,7 @@ class virtual_machine = object(self)
         | None -> raise (What_r_u_doing_lol "can't call a function before you define it")
         | Some called ->
           let old_registers = registers in
-          registers <- Array.create ~len:0 (Numeric 0.0);
+          registers <- Array.create ~len:0 Void;
           self#push_arguments called.num_parameters called.num_locals;
           self#interpret_opcodes (Stream.of_list called.op_codes);
           registers <- old_registers;
@@ -289,6 +313,16 @@ let rec print_opcodes ops =
       print_int sp;
       print_newline();
       print_opcodes tl
+    | LoadGlobal sp ->
+      print_string "LOAD GLOBAL: ";    
+      print_int sp;
+      print_newline();
+      print_opcodes tl
+    | StoreGlobal sp ->
+      print_string "STORE GLOBAL: ";    
+      print_int sp;
+      print_newline();
+      print_opcodes tl
     | FunctionCall sp ->
       print_string "FUNCTION CALL: ";
       print_int sp;
@@ -338,6 +372,8 @@ let rec opcodes bytes =
         | 13 -> Stream.junk bytes; Some (PushSpookyvalue (Spookystring (consume_string bytes)))
         | 14 -> Stream.junk bytes; Some (PushSpookyvalue (Void))
         | 15 -> Stream.junk bytes; Some (CallBuiltin (Int32.to_int_exn (consume_operand bytes)))
+        | 16 -> Stream.junk bytes; Some (LoadGlobal (Int32.to_int_exn (consume_operand bytes)))
+        | 17 -> Stream.junk bytes; Some (StoreGlobal (Int32.to_int_exn (consume_operand bytes)))
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "couldn't recognize op: %i%!" op))
     )
   in Stream.from(next_opcode)

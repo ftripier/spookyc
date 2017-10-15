@@ -141,7 +141,7 @@ let compile filename =
   | SymbolTable.Error msg ->
       Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg  
   | BytecodeInterpreter.What_r_u_doing_lol msg ->
-      Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg
+      Printf.eprintf "%s\n%!" msg
   ;
   close_in input
 

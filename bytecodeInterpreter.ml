@@ -38,15 +38,13 @@ and function_declaration = {
 
 let print_spookyval spval =
   match spval with
-  | Numeric sp ->
-    print_float sp;
-    print_string " "
   | Spookystring sp ->
-    print_string sp;
-    print_string " "
-  | Void ->
-    print_string "Void";
-    print_string " "    
+    if IsItScary.its_scary sp then (
+      print_string sp;
+      print_string " "
+    ) else
+      raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
+  | _ -> raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
 
 let apply_unary_op a op =
   match a with
@@ -127,7 +125,10 @@ class virtual_machine = object(self)
 
   method creppy_whispers_from_outside =
     let very_creppy = read_line() in
-      op_stack <- (Spookystring(very_creppy) :: op_stack)
+      if IsItScary.its_scary very_creppy then
+        op_stack <- (Spookystring(very_creppy) :: op_stack)
+      else
+        raise (What_r_u_doing_lol "Dear user, the handsome genius behind this program wrote it in the world's first spooky-complete language, a computational model that only accepts spooky I/O.\nYou attempted to input something 'unspooky', and we cannot allow that under our invariants. So the program crashed. Also, there's a skeleton behind you! AHHHHH!")
 
   method print_registers =
     print_string "registers = ";

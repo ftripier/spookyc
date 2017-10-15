@@ -29,6 +29,10 @@ let push_spookyval spookyval =
     let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
     let contents = List.map (List.rev (String.to_list_rev syntax)) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
     List.append instruction contents
+  | Ast.True ->
+    [(Int32.of_int_exn 18)]
+  | Ast.False ->
+    [(Int32.of_int_exn 19)]
   | Ast.Void -> [(Int32.of_int_exn 14)]
 
 let call_builtin function_name =
@@ -125,6 +129,21 @@ let rec compile_ast symbol_table syntax =
       | Ast.Negation syntax -> List.append
         (List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node)))
         [Int32.of_int_exn 12]
+      | Ast.Equal syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 20]
+      | Ast.Less syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 21]
+      | Ast.Greater syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 22]
+      | Ast.Gequal syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 23]
+      | Ast.Lequal syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 24]
 
 let compile filename =
   let input = open_in filename in

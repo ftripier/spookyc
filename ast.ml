@@ -9,6 +9,8 @@ terminal nodes *)
 type spookyval =
   | Numeric of float
   | Spookystring of string
+  | True
+  | False
   | Void
 
 type node =
@@ -33,6 +35,11 @@ and operator =
   | Division of { children: node list; }
   | Subtraction of { children: node list; }
   | Negation of { children: node list; }
+  | Equal of { a: node; b: node; }
+  | Gequal of { a: node; b: node; }
+  | Lequal of { a: node; b: node; }
+  | Less of { a: node; b: node; }
+  | Greater of { a: node; b: node; }
 
 let serialize_operator n =
   match n with
@@ -41,11 +48,18 @@ let serialize_operator n =
   | Division n -> "Division!\n"
   | Subtraction n -> "Subtraction!\n"
   | Negation n -> "Negation!\n"
+  | Equal n -> "Equal!\n"
+  | Gequal n -> "Gequal!\n"
+  | Lequal n -> "Lequal!\n"
+  | Less n -> "Less!\n"
+  | Greater n -> "Greater!\n"
 
 let serialize_spookyval n =
   match n with
   | Numeric num -> string_of_float num
   | Spookystring st -> st
+  | True -> "True"
+  | False -> "False"  
   | Void -> "Void"
 
 let serialize_node (n: node) =

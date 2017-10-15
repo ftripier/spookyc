@@ -7,11 +7,17 @@ type binary_operation =
   | DivideNumeric
   | MultiplyNumeric
   | SubtractNumeric
+  | Equal
+  | Greater
+  | Less
+  | Lequal
+  | Gequal
 
 type spookyval =
   | Numeric of float
   | Spookystring of string
   | Void
+  | Booolean of bool
 
 type unary_operation =
   | Negation
@@ -63,6 +69,11 @@ let apply_binary_op a b op =
     | DivideNumeric -> (Numeric(a /. b))
     | MultiplyNumeric -> (Numeric(a *. b))
     | SubtractNumeric -> (Numeric(a -. b))
+    | Equal -> (Booolean(a =. b))
+    | Greater -> (Booolean(a > b))
+    | Less -> (Booolean(a < b))
+    | Gequal -> (Booolean(a >= b))
+    | Lequal -> (Booolean(a <= b))
   )
   | Numeric a, Spookystring b -> (
     match op with
@@ -77,7 +88,22 @@ let apply_binary_op a b op =
   | Spookystring a, Spookystring b -> (
     match op with
     | Add -> (Spookystring (a ^ b))
+    | Equal -> (Booolean(String.equal a b))
+    | Greater -> (Booolean(a > b))
+    | Less -> (Booolean(a < b))
+    | Gequal -> (Booolean(a >= b))
+    | Lequal -> (Booolean(a <= b))
     | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
+  )
+  | Booolean a, Booolean b -> (
+    match op with
+    | Equal -> (Booolean(phys_equal a b))
+    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a boolean! Now I'm crashing because I'm scared of that!")
+  )
+  | Void, Void -> (
+    match op with
+    | Equal -> Booolean true
+    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on Void! Now I'm crashing because I'm scared of that!")
   )
   | _, _ -> Void
 
@@ -375,6 +401,13 @@ let rec opcodes bytes =
         | 15 -> Stream.junk bytes; Some (CallBuiltin (Int32.to_int_exn (consume_operand bytes)))
         | 16 -> Stream.junk bytes; Some (LoadGlobal (Int32.to_int_exn (consume_operand bytes)))
         | 17 -> Stream.junk bytes; Some (StoreGlobal (Int32.to_int_exn (consume_operand bytes)))
+        | 18 -> Stream.junk bytes; Some (PushSpookyvalue (Booolean(true)))
+        | 19 -> Stream.junk bytes; Some (PushSpookyvalue (Booolean(false)))
+        | 20 -> Stream.junk bytes; Some (BinaryOperation(Equal))
+        | 21 -> Stream.junk bytes; Some (BinaryOperation(Less))
+        | 22 -> Stream.junk bytes; Some (BinaryOperation(Greater))
+        | 23 -> Stream.junk bytes; Some (BinaryOperation(Gequal))
+        | 24 -> Stream.junk bytes; Some (BinaryOperation(Lequal))        
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

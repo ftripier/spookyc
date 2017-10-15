@@ -1,5 +1,6 @@
 %token <float> NUMBER
 %token PLUS MINUS TIMES DIV
+%token LESS GREATER GEQUAL LEQUAL EQUAL
 %token LPAREN RPAREN
 %token LBRACE RBRACE
 %token COMMA
@@ -7,6 +8,8 @@
 %token EOF
 %token FUNC
 %token VOID
+%token TRUE
+%token FALSE
 %token VAR_DEC
 %token <string> STR
 %token RETURN
@@ -15,6 +18,7 @@
 
 %left PLUS MINUS        /* lowest precedence */
 %left TIMES DIV         /* medium precedence */
+%left LESS GREATER GEQUAL LEQUAL EQUAL /* a little higher precedence */
 %nonassoc UMINUS        /* highest precedence */
 
 %start <Ast.node> main
@@ -72,6 +76,10 @@ expr:
     { Ast.Spookyval(Ast.Numeric i) }
 | s = STR
     { Ast.Spookyval(Ast.Spookystring s) }
+| t = TRUE
+    { Ast.Spookyval(Ast.True) }
+| f = FALSE
+    { Ast.Spookyval(Ast.False) }
 | id = ID
     { Ast.Reference id }
 | id = ID LPAREN args = argument_list {
@@ -92,5 +100,15 @@ expr:
     {  Ast.Operator(Ast.Multiplication { children = [e1; e2]; }) }
 | e1 = expr DIV e2 = expr
     {  Ast.Operator(Ast.Division { children = [e1; e2]; }) }
+| e1 = expr EQUAL e2 = expr
+    { Ast.Operator(Ast.Equal {a = e1; b = e2;}) }
+| e1 = expr GEQUAL e2 = expr
+    { Ast.Operator(Ast.Gequal {a = e1; b = e2;}) }
+| e1 = expr LEQUAL e2 = expr
+    { Ast.Operator(Ast.Lequal {a = e1; b = e2;}) }
+| e1 = expr GREATER e2 = expr
+    { Ast.Operator(Ast.Greater {a = e1; b = e2;}) }
+| e1 = expr LESS e2 = expr
+    { Ast.Operator(Ast.Less {a = e1; b = e2;}) }
 | MINUS e = expr %prec UMINUS
     {  Ast.Operator(Ast.Negation { children = [e]; }) }

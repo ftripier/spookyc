@@ -15,8 +15,12 @@ rule token = parse
     { Lexing.new_line lexbuf; token lexbuf }
 | '"'
     { STR (string (Buffer.create 100) lexbuf) }
-| "🌚"
+| "⚰️"
     { VOID }
+| "🌕"
+    { TRUE }
+| "🌚"
+    { FALSE }
 | "👻"
     { FUNC }
 | "🤡"
@@ -31,6 +35,16 @@ rule token = parse
     { TIMES }
 | '/'
     { DIV }
+| '>'
+    { GREATER }
+| '<'
+    { LESS }
+| "=="
+    { EQUAL }
+| "<="
+    { LEQUAL }
+| ">="
+    { GEQUAL }
 | "🎃"
     { SEMICOLON }
 | "😱"

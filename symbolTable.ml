@@ -13,12 +13,15 @@ and declaration =
 
 exception Error of string
 
-let count_symbols test_symbol table =
+let rec count_symbols test_symbol table =
   let num_symbols = ref 0 in
-  Hashtbl.iter_vals table.symbols ~f:(
+  Hashtbl.iter table.symbols ~f:(
     fun a -> if test_symbol a then num_symbols := !num_symbols + 1
   );
-  !num_symbols
+  match table.previous with
+  (* not tail-recursive *)
+  | Some prev -> !num_symbols + (count_symbols test_symbol prev)
+  | None -> !num_symbols
 
 let number_of_globals table =
   count_symbols (fun dec -> (
@@ -50,15 +53,15 @@ let rec print_table ?level:(l=0) table =
         match dec with
         | FunctionDeclaration dec ->
           print_string (Ast.print_level l);
-          print_endline a;
+          Printf.printf "%s : %d\n%!" a dec.index;          
           print_table ~level:(l+1) dec.parameters;
           print_table ~level:(l+1) dec.locals;
         | GlobalVariableDeclaration dec ->
           print_string (Ast.print_level l);
-          print_endline a;
+          Printf.printf "%s : %d\n%!" a dec;
         | VariableDeclaration dec ->
           print_string (Ast.print_level l);
-          print_endline a;
+          Printf.printf "%s : %d\n%!" a dec          
       )
   )
 
@@ -86,12 +89,14 @@ let rec add_symbol (symbol:Ast.node) table =
         symbols = String.Table.create();
       });
     }))
+  | Ast.ParamDeclaration s ->
+    (s, VariableDeclaration(number_of_variables table))
   | Ast.VariableDeclaration s ->
     (match table.previous with
       | None ->
-        (s.id, GlobalVariableDeclaration(number_of_variables table))
+        (s.id, GlobalVariableDeclaration(number_of_globals table))
       | Some table ->
-        (s.id, VariableDeclaration(number_of_globals table))    
+        (s.id, VariableDeclaration(number_of_variables table))    
     )
   ) in
   if IsItScary.its_scary symbol_string then
@@ -106,6 +111,7 @@ and populate_symbol_table ?s:(symbols={
     match curr_node with
     | Ast.FunctionDeclaration syntax -> add_symbol curr_node symbols
     | Ast.VariableDeclaration syntax -> add_symbol curr_node symbols
+    | Ast.ParamDeclaration syntax -> add_symbol curr_node symbols
     | Ast.Program syntax -> List.iter ~f:visit_ast syntax.children  
     | Ast.StatementList syntax -> List.iter ~f:visit_ast syntax.children
     | Ast.ParameterList syntax -> List.iter ~f:visit_ast syntax.children

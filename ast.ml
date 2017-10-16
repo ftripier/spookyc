@@ -1,7 +1,5 @@
 open Core
 
-(* TODO: someday, when I'm better at algebraic data types, figure out how
-to consolidate these duplicate fields/variants *)
 (* TODO: not all of these nodes need a children field. Rename the edges for
 nonterminal nodes to something more semantically informative. *)
 (* TODO: perhaps these types could be factored into nonterminal nodes, and
@@ -27,6 +25,8 @@ type node =
   | VariableDeclaration of { id: string; children: node list; }
   | VariableAssignment of { id: string; children: node list; }
   | ReturnStatement of { children: node list; }
+  | IfStatement of { test: node; statements: node list}
+  | IfElseStatement of { test: node; if_statements: node list; else_statements: node list}
   | Statement of { children: node list; }
   | Operator of operator
 and operator = 
@@ -78,6 +78,8 @@ let serialize_node (n: node) =
     | ParameterList n -> "ParameterList!\n"
     | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s\n%!" n.id
     | VariableAssignment n -> "VariableAssignment!\n"
+    | IfStatement n -> "IfStatement!\n"
+    | IfElseStatement n -> "IfElseStatement!\n"
     | Operator n -> serialize_operator n
 
 (* TODO: make tail-call recursive *)
@@ -105,6 +107,23 @@ let rec print_ast ?level:(l=0) (syntax:node) =
   | ParamDeclaration syntax -> ()  
   | VariableAssignment syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | ReturnStatement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | IfStatement syntax ->
+    print_string (print_level l);
+    print_endline "Test code:";  
+    print_ast ~level:(l + 1) syntax.test;
+    print_string (print_level l);    
+    print_endline "Statements:";
+    List.iter ~f:(print_ast ~level:(l + 1)) syntax.statements
+  | IfElseStatement syntax ->
+    print_string (print_level l);  
+    print_endline "Test code:";
+    print_ast ~level:(l + 1) syntax.test;
+    print_string (print_level l);    
+    print_endline "If statements:";
+    List.iter ~f:(print_ast ~level:(l + 1)) syntax.if_statements;
+    print_string (print_level l);    
+    print_endline "Else statements:";
+    List.iter ~f:(print_ast ~level:(l + 1)) syntax.else_statements
   | Statement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Operator syntax -> 
     match syntax with
@@ -112,7 +131,19 @@ let rec print_ast ?level:(l=0) (syntax:node) =
     | Addition syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
     | Division syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
     | Subtraction syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
-    | Negation syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 
-
-
-  
+    | Negation syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+    | Equal syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b
+    | Gequal syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b
+    | Lequal syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b
+    | Less syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b
+    | Greater syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b

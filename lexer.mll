@@ -17,7 +17,7 @@ rule token = parse
     { STR (string (Buffer.create 100) lexbuf) }
 | "⚰️"
     { VOID }
-| "🌕"
+| "🌝"
     { TRUE }
 | "🌚"
     { FALSE }
@@ -59,6 +59,10 @@ rule token = parse
     { LBRACE }
 | "☠️"
     { RBRACE }
+| "😨"
+    { IF }
+| "😰"
+    { ELSE }
 | ['A'-'Z''a'-'z''_''!']['A'-'Z''a'-'z''_''0'-'9''!']*  as id
     { ID (id) }
 | (digits)'.'?(digits)* as i

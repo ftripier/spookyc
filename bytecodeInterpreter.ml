@@ -31,9 +31,10 @@ type opcode =
   | StoreGlobal of int
   | UnaryOperation of unary_operation
   | FunctionDeclaration of function_declaration
-  | EndFunctionDeclaration
   | FunctionCall of int
   | CallBuiltin of int
+  | IfDefinition of if_definition
+  | IfElseDefinition of if_else_definition
   | Return
 and function_declaration = {
   symbol: int;
@@ -41,6 +42,23 @@ and function_declaration = {
   num_locals: int;
   op_codes: opcode list;
 }
+and if_definition = {
+  test_code: opcode list;
+  execution_code: opcode list;
+}
+and if_else_definition = {
+  test_code: opcode list;
+  true_code: opcode list;
+  false_code: opcode list;
+}
+
+let debug_spookyval spval =
+  match spval with
+    | Numeric n -> print_float n
+    | Spookystring s -> Printf.printf "SPOOKYSTRING: %s" s
+    | Void -> print_string "VOID"
+    | Booolean b -> print_string (if b then "TRUE" else "FALSE")
+
 
 let print_spookyval spval =
   match spval with
@@ -183,6 +201,13 @@ class virtual_machine = object(self)
     | [] -> raise (What_r_u_doing_lol "There weren't enough operands for this... unary op. You just needed one man, come on. Gotta do the meme: So scared! Crashing the program!")
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
   
+  method test_op_stack test =
+    match op_stack with
+    | [] -> test Void
+    | a :: tl ->
+      op_stack <- tl;
+      test a
+  
   method push_arguments num_args num_locals =
     let arguments = Array.create ~len:(num_args + num_locals) (Void) in
     let rec pop args_left =
@@ -252,8 +277,33 @@ class virtual_machine = object(self)
         Stream.junk opcodes;      
         self#set_function op;
         self#interpret_opcodes opcodes
-      | EndFunctionDeclaration ->
+      | IfDefinition if_statement ->
         Stream.junk opcodes;
+        self#interpret_opcodes (Stream.of_list if_statement.test_code);
+        self#test_op_stack (fun a ->
+          match a with
+          | Void -> ()
+          | Booolean spookyval ->
+            if spookyval then self#interpret_opcodes (Stream.of_list if_statement.execution_code) else ()
+          | Numeric spookyval ->
+            if spookyval =. 0.0 then () else self#interpret_opcodes (Stream.of_list if_statement.execution_code)
+          | _ -> self#interpret_opcodes (Stream.of_list if_statement.execution_code)
+        );
+        self#interpret_opcodes opcodes
+      | IfElseDefinition if_else_statement ->
+        Stream.junk opcodes;   
+        self#interpret_opcodes (Stream.of_list if_else_statement.test_code);
+        self#test_op_stack (fun a ->
+          match a with
+          | Void -> self#interpret_opcodes (Stream.of_list if_else_statement.false_code)
+          | Booolean spookyval ->
+            if spookyval then self#interpret_opcodes (Stream.of_list if_else_statement.true_code)
+            else self#interpret_opcodes (Stream.of_list if_else_statement.false_code)
+          | Numeric spookyval ->
+            if spookyval =. 0.0 then self#interpret_opcodes (Stream.of_list if_else_statement.false_code)
+            else self#interpret_opcodes (Stream.of_list if_else_statement.true_code)
+          | _ -> self#interpret_opcodes (Stream.of_list if_else_statement.true_code)
+        );
         self#interpret_opcodes opcodes
       | FunctionCall op ->
         Stream.junk opcodes;      
@@ -407,7 +457,30 @@ let rec opcodes bytes =
         | 21 -> Stream.junk bytes; Some (BinaryOperation(Less))
         | 22 -> Stream.junk bytes; Some (BinaryOperation(Greater))
         | 23 -> Stream.junk bytes; Some (BinaryOperation(Gequal))
-        | 24 -> Stream.junk bytes; Some (BinaryOperation(Lequal))        
+        | 24 -> Stream.junk bytes; Some (BinaryOperation(Lequal))
+        | 25 ->
+          Stream.junk bytes;
+          let test_buffered = buffer_opcodes (opcodes bytes) in
+          let test_code = optimize_ops test_buffered in
+          let execution_buffered = buffer_opcodes (opcodes bytes) in
+          let execution_code = optimize_ops execution_buffered in
+          Some (IfDefinition {
+            test_code;
+            execution_code;
+          })
+        | 26 ->
+        Stream.junk bytes;
+          let test_buffered = buffer_opcodes (opcodes bytes) in
+          let test_code = optimize_ops test_buffered in
+          let true_buffered = buffer_opcodes (opcodes bytes) in
+          let true_code = optimize_ops true_buffered in
+          let false_buffered = buffer_opcodes (opcodes bytes) in
+          let false_code = optimize_ops false_buffered in
+          Some (IfElseDefinition {
+            test_code;
+            true_code;
+            false_code;
+          })
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

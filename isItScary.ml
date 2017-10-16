@@ -35,6 +35,8 @@ let spooky_words = create_spooky_words_regex [
   "crazy";
   "pyscho";
   "killer";
+  "goblin";
+  "nilbog";
 ]
 
 let not_scary_words = create_spooky_words_regex (* these words arent spooky, but code reuse *) [

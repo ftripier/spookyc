@@ -1,6 +1,7 @@
 %token <float> NUMBER
 %token PLUS MINUS TIMES DIV
 %token LESS GREATER GEQUAL LEQUAL EQUAL
+%token IF ELSE
 %token LPAREN RPAREN
 %token LBRACE RBRACE
 %token COMMA
@@ -36,7 +37,7 @@ declarations:
 | dec = function_declaration decs = declarations { dec :: decs }
 | dec = variable_declaration decs = declarations { dec :: decs }
 
-function_declaration: FUNC id = ID LPAREN plist = parameter_list LBRACE statements = statementseq RBRACE {
+function_declaration: FUNC id = ID LPAREN plist = parameter_list LBRACE statements = statementseq {
     Ast.FunctionDeclaration {
         id;
         code = Ast.StatementList { children = statements; };
@@ -45,7 +46,8 @@ function_declaration: FUNC id = ID LPAREN plist = parameter_list LBRACE statemen
 }
 
 statementseq:
-| stmt = statement { [stmt] }
+| RBRACE { [] }
+| stmt = statement RBRACE { [stmt] }
 | stmt = statement m = statementseq {  stmt :: m }
 
 statement:
@@ -53,11 +55,18 @@ statement:
 | stmt = variable_assignment { stmt }
 | stmt = return_statement { stmt }
 | stmt = void_expr { stmt }
+| stmt = conditional { stmt }
 
 variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children=[]; } }
 variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment { id; children = [e]; } }
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
 void_expr: e = expr SEMICOLON { Ast.Expression { children = [e]; } }
+
+conditional:
+| IF LPAREN e = expr RPAREN LBRACE statements = statementseq
+    { Ast.IfStatement { test = e; statements; } }
+| IF LPAREN e = expr RPAREN LBRACE if_statements = statementseq ELSE LBRACE else_statements = statementseq
+    { Ast.IfElseStatement { test = e; if_statements; else_statements; } }
 
 parameter_list:
 | RPAREN { [] }

@@ -27,6 +27,8 @@ rule token = parse
     { VAR_DEC }
 | "🍬"
     { RETURN }
+| "🗡️"
+    { NOT }
 | '+'
     { PLUS }
 | '-'
@@ -45,6 +47,8 @@ rule token = parse
     { LEQUAL }
 | ">="
     { GEQUAL }
+| "🗡️="
+    { NEQUAL }
 | "🎃"
     { SEMICOLON }
 | "😱"

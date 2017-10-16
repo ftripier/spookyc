@@ -1,6 +1,7 @@
 %token <float> NUMBER
 %token PLUS MINUS TIMES DIV
-%token LESS GREATER GEQUAL LEQUAL EQUAL
+%token LESS GREATER GEQUAL LEQUAL EQUAL NEQUAL
+%token NOT
 %token IF ELSE
 %token LPAREN RPAREN
 %token LBRACE RBRACE
@@ -20,8 +21,8 @@
 
 %left PLUS MINUS        /* lowest precedence */
 %left TIMES DIV         /* medium precedence */
-%left LESS GREATER GEQUAL LEQUAL EQUAL /* a little higher precedence */
-%nonassoc UMINUS        /* highest precedence */
+%left LESS GREATER GEQUAL LEQUAL EQUAL NEQUAL /* a little higher precedence */
+%nonassoc NOT UMINUS    /* highest precedence */
 
 %start <Ast.node> main
 %{
@@ -126,3 +127,5 @@ expr:
     { Ast.Operator(Ast.Less {a = e1; b = e2;}) }
 | MINUS e = expr %prec UMINUS
     {  Ast.Operator(Ast.Negation { children = [e]; }) }
+| NOT inverted = expr
+    {  Ast.Operator(Ast.Not { inverted; }) }

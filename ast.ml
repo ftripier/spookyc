@@ -36,8 +36,10 @@ and operator =
   | Division of { children: node list; }
   | Subtraction of { children: node list; }
   | Negation of { children: node list; }
+  | Not of { inverted: node; }
   | Equal of { a: node; b: node; }
   | Gequal of { a: node; b: node; }
+  | Nequal of { a: node; b: node; }
   | Lequal of { a: node; b: node; }
   | Less of { a: node; b: node; }
   | Greater of { a: node; b: node; }
@@ -48,12 +50,14 @@ let serialize_operator n =
   | Addition n -> "Addition!\n"
   | Division n -> "Division!\n"
   | Subtraction n -> "Subtraction!\n"
+  | Not n -> "Not!\n"
   | Negation n -> "Negation!\n"
   | Equal n -> "Equal!\n"
   | Gequal n -> "Gequal!\n"
   | Lequal n -> "Lequal!\n"
   | Less n -> "Less!\n"
   | Greater n -> "Greater!\n"
+  | Nequal n -> "Nequal!\n"
 
 let serialize_spookyval n =
   match n with
@@ -154,5 +158,8 @@ let rec print_ast ?level:(l=0) (syntax:node) =
       print_ast ~level:(l + 1) syntax.a;
       print_ast ~level:(l + 1) syntax.b
     | Greater syntax ->
+      print_ast ~level:(l + 1) syntax.a;
+      print_ast ~level:(l + 1) syntax.b
+    | Nequal syntax ->
       print_ast ~level:(l + 1) syntax.a;
       print_ast ~level:(l + 1) syntax.b

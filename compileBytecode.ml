@@ -153,6 +153,9 @@ let rec compile_ast symbol_table syntax =
       | Ast.Lequal syntax ->
         List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
         [ Int32.of_int_exn 24]
+      | Ast.Lequal syntax ->
+        List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
+        [ Int32.of_int_exn 24]
 
 and compile_statements statements symbol_table=
   List.fold_left statements ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))

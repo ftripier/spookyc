@@ -12,6 +12,7 @@ type binary_operation =
   | Less
   | Lequal
   | Gequal
+  | Nequal
 
 type spookyval =
   | Numeric of float
@@ -21,6 +22,7 @@ type spookyval =
 
 type unary_operation =
   | Negation
+  | Not
 
 type opcode =
   | PushSpookyvalue of spookyval
@@ -137,60 +139,79 @@ let print_spookyval spval =
       raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
   | _ -> raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
 
+let spooky_to_bool spval =
+  match spval with
+  | Numeric n -> not(n =. 0.0)
+  | Spookystring s -> not(String.equal s "")
+  | Void -> false
+  | Booolean b -> b
+
+let spooky_to_string spval =
+  match spval with
+  | Numeric n -> string_of_float n
+  | Spookystring s -> s
+  | Void -> "Void"
+  | Booolean b -> if b then "True" else "False"
+
+let spooky_equality a b =
+  match a, b with
+  | Numeric a, Numeric b -> a =. b
+  | Spookystring a, Spookystring b -> String.equal a b
+  | Void, Void -> true
+  | Booolean a, Booolean b -> phys_equal a b
+  | _, _ -> false
+
+let spooky_greater a b =
+  match a, b with
+  | Numeric a, Numeric b -> a > b
+  | Spookystring a, Spookystring b -> a > b
+  | Void, Void -> false
+  | Booolean a, Booolean b -> false
+  | _, _ -> false
+
+let spooky_less a b =
+  match a, b with
+  | Numeric a, Numeric b -> a < b
+  | Spookystring a, Spookystring b -> a < b
+  | Void, Void -> false
+  | Booolean a, Booolean b -> false
+  | _, _ -> false
+
 let apply_unary_op a op =
-  match a with
-  | Numeric anum -> (
-    match op with
-    | Negation -> (Numeric(~-. anum))
-  )
-  | Spookystring anum -> raise (What_r_u_doing_lol "Eek! You tried to negate a string! What does that even mean? This program is done.")
-  | Void -> Void
+  match op with
+  | Negation ->
+    (match a with
+      | Numeric anum -> Numeric(~-. anum)
+      | _ -> Void
+    )
+  | Not -> Booolean(not (spooky_to_bool a))
 
 let apply_binary_op a b op =
-  match a, b with
-  | Numeric a, Numeric b -> (
-    match op with
-    | Add -> (Numeric(a +. b))
-    | DivideNumeric -> (Numeric(a /. b))
-    | MultiplyNumeric -> (Numeric(a *. b))
-    | SubtractNumeric -> (Numeric(a -. b))
-    | Equal -> (Booolean(a =. b))
-    | Greater -> (Booolean(a > b))
-    | Less -> (Booolean(a < b))
-    | Gequal -> (Booolean(a >= b))
-    | Lequal -> (Booolean(a <= b))
-  )
-  | Numeric a, Spookystring b -> (
-    match op with
-    | Add -> (Spookystring ((string_of_float a) ^ b))
-    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
-  )
-  | Spookystring a, Numeric b -> (
-    match op with
-    | Add -> (Spookystring (a ^ (string_of_float b)))
-    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
-  )
-  | Spookystring a, Spookystring b -> (
-    match op with
-    | Add -> (Spookystring (a ^ b))
-    | Equal -> (Booolean(String.equal a b))
-    | Greater -> (Booolean(a > b))
-    | Less -> (Booolean(a < b))
-    | Gequal -> (Booolean(a >= b))
-    | Lequal -> (Booolean(a <= b))
-    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a string! Now I'm crashing because I'm scared of that!")
-  )
-  | Booolean a, Booolean b -> (
-    match op with
-    | Equal -> (Booolean(phys_equal a b))
-    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on a boolean! Now I'm crashing because I'm scared of that!")
-  )
-  | Void, Void -> (
-    match op with
-    | Equal -> Booolean true
-    | _ -> raise (What_r_u_doing_lol "Oh no! You used a confusing operator on Void! Now I'm crashing because I'm scared of that!")
-  )
-  | _, _ -> Void
+  match op with
+  | Add ->
+    (match a, b with
+    | Numeric a, Numeric b -> Numeric(a +. b)
+    | _, Spookystring bsp -> Spookystring (spooky_to_string a ^ bsp)
+    | Spookystring bsp, _ -> Spookystring (bsp ^ spooky_to_string b)
+    | _, _ -> Void)
+  | DivideNumeric ->
+    (match a, b with
+    | Numeric a, Numeric b -> Numeric(a /. b)
+    | _, _ -> Void)
+  | MultiplyNumeric ->
+    (match a, b with
+    | Numeric a, Numeric b -> Numeric(a *. b)
+    | _, _ -> Void)
+  | SubtractNumeric ->
+    (match a, b with
+    | Numeric a, Numeric b -> Numeric(a -. b)
+    | _, _ -> Void)
+  | Equal -> Booolean(spooky_equality a b)
+  | Greater -> Booolean(spooky_greater a b)
+  | Less -> Booolean(spooky_less a b)
+  | Lequal -> Booolean(spooky_greater a b)
+  | Gequal -> Booolean(not (spooky_less a b))
+  | Nequal -> Booolean(not (spooky_equality a b))
 
 let apply_constant_unary_op a op =
   PushSpookyvalue (apply_unary_op a op)
@@ -556,6 +577,8 @@ let rec opcodes ?d:(debug=false) bytes =
           } in
           if debug then debug_opcode_object loop_def;
           Some loop_def
+        | 28 -> Stream.junk bytes; Some (BinaryOperation(Lequal));
+        | 29 -> Stream.junk bytes; Some (UnaryOperation(Not))
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

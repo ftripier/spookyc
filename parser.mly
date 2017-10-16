@@ -12,6 +12,7 @@
 %token TRUE
 %token FALSE
 %token VAR_DEC
+%token LOOP
 %token <string> STR
 %token RETURN
 %token <string> ID
@@ -56,11 +57,15 @@ statement:
 | stmt = return_statement { stmt }
 | stmt = void_expr { stmt }
 | stmt = conditional { stmt }
+| stmt = loop { stmt }
 
 variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children=[]; } }
 variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment { id; children = [e]; } }
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
 void_expr: e = expr SEMICOLON { Ast.Expression { children = [e]; } }
+
+loop: LOOP LPAREN e = expr RPAREN LBRACE statements = statementseq
+    { Ast.LoopStatement {test = e; statements; } }
 
 conditional:
 | IF LPAREN e = expr RPAREN LBRACE statements = statementseq

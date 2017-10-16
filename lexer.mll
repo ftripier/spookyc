@@ -63,6 +63,8 @@ rule token = parse
     { IF }
 | "😰"
     { ELSE }
+| "🦇"
+    { LOOP }
 | ['A'-'Z''a'-'z''_''!']['A'-'Z''a'-'z''_''0'-'9''!']*  as id
     { ID (id) }
 | (digits)'.'?(digits)* as i

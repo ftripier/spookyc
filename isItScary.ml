@@ -5,8 +5,11 @@ let create_spooky_words_regex words =
     Re2.Regex.create_exn regexp
 
 let spooky_words = create_spooky_words_regex [
-  "spooky";
+  "spook";
   "scary";
+  "scarily";
+  "scarier";
+  "scariest";
   "scream";
   "ghost";
   "skeleton";
@@ -20,6 +23,7 @@ let spooky_words = create_spooky_words_regex [
   "dead";
   "devil";
   "666";
+  "demon";
   "boo";
   "creepy";
   "creppy";
@@ -28,8 +32,8 @@ let spooky_words = create_spooky_words_regex [
   "murder";
   "death";
   "dead";
-  "A+(!+)?";
-  "A+H+(!+)?";
+  "a+(!+)?";
+  "a+h+(!+)?";
   "frankenstein";
   "mad";
   "crazy";
@@ -45,4 +49,5 @@ let not_scary_words = create_spooky_words_regex (* these words arent spooky, but
 ]
 
 let its_scary str =
-  (Re2.Regex.matches spooky_words str) && (not (Re2.Regex.matches not_scary_words str))
+  let lowercase = String.lowercase str in
+  (Re2.Regex.matches spooky_words lowercase) && (not (Re2.Regex.matches not_scary_words lowercase))

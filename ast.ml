@@ -25,8 +25,9 @@ type node =
   | VariableDeclaration of { id: string; children: node list; }
   | VariableAssignment of { id: string; children: node list; }
   | ReturnStatement of { children: node list; }
-  | IfStatement of { test: node; statements: node list}
-  | IfElseStatement of { test: node; if_statements: node list; else_statements: node list}
+  | IfStatement of { test: node; statements: node list }
+  | IfElseStatement of { test: node; if_statements: node list; else_statements: node list }
+  | LoopStatement of { test: node; statements: node list }
   | Statement of { children: node list; }
   | Operator of operator
 and operator = 
@@ -80,6 +81,7 @@ let serialize_node (n: node) =
     | VariableAssignment n -> "VariableAssignment!\n"
     | IfStatement n -> "IfStatement!\n"
     | IfElseStatement n -> "IfElseStatement!\n"
+    | LoopStatement n -> "WhileStatement!\n"
     | Operator n -> serialize_operator n
 
 (* TODO: make tail-call recursive *)
@@ -124,6 +126,13 @@ let rec print_ast ?level:(l=0) (syntax:node) =
     print_string (print_level l);    
     print_endline "Else statements:";
     List.iter ~f:(print_ast ~level:(l + 1)) syntax.else_statements
+  | LoopStatement syntax ->
+    print_string (print_level l);
+    print_endline "Test code:";  
+    print_ast ~level:(l + 1) syntax.test;
+    print_string (print_level l);    
+    print_endline "Statements:";
+    List.iter ~f:(print_ast ~level:(l + 1)) syntax.statements
   | Statement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Operator syntax -> 
     match syntax with

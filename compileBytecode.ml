@@ -120,6 +120,7 @@ let rec compile_ast symbol_table syntax =
     | Ast.Statement syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.IfStatement syntax -> compile_if_statement syntax.test syntax.statements symbol_table
     | Ast.IfElseStatement syntax -> compile_if_else_statement syntax.test syntax.if_statements syntax.else_statements symbol_table
+    | Ast.LoopStatement syntax -> compile_loop_statement syntax.test syntax.statements symbol_table
     | Ast.Operator syntax -> 
       match syntax with
       | Ast.Multiplication syntax -> List.append
@@ -169,13 +170,32 @@ and compile_if_else_statement test_code true_code false_code symbol_table =
   let conditional = List.append (List.append test if_statements) else_statements in
   List.append [Int32.of_int_exn 26] conditional
 
-let compile filename =
+and compile_loop_statement test_code execution_code symbol_table =
+  let test = List.append (compile_ast symbol_table test_code) [Int32.of_int_exn 9] in
+  let statements = List.append (compile_statements execution_code symbol_table) [Int32.of_int_exn 9] in
+  let conditional = List.append test statements in
+  List.append [Int32.of_int_exn 27] conditional
+
+let compile debug filename =
   let input = open_in filename in
   let filebuf = Lexing.from_channel input in
   try
     let ast = Parser.main Lexer.token filebuf in
     let st = (SymbolTable.populate_symbol_table ast) in
-    BytecodeInterpreter.interpret (Stream.of_list (add_main_call st (compile_ast st ast)))
+    if debug then (
+      print_endline "🐛  🐞  🐜  🦋  🕷️  🐝  🐛  🦋  🐞  🐛  🐞  🐜  🐝  🦋  🕷️  🐛  🐝  🦋  🐞  🕷️  🐛  🦋  🐝  🐞  🐛  🐞  🐜  🦋  🐞  🐝  🕷️  🐛  🦋  🐞";
+      print_endline "AST: ";
+      print_newline();      
+      Ast.print_ast ast;
+      print_newline();
+      print_endline "Symbol Table: ";
+      print_newline();
+      SymbolTable.print_table st;
+      print_newline();
+      print_newline();      
+    );
+    BytecodeInterpreter.interpret ~d:debug (Stream.of_list (add_main_call st (compile_ast st ast)));
+    if debug then print_endline "🐛  🐞  🐜  🦋  🕷️  🐝  🐛  🦋  🐞  🐛  🐞  🐜  🐝  🦋  🕷️  🐛  🐝  🦋  🐞  🕷️  🐛  🦋  🐝  🐞  🐛  🐞  🐜  🦋  🐞  🐝  🕷️  🐛  🦋  🐞"    
   with
   | Scarerrors.Error msg ->
     Printf.eprintf "%s\n%!" msg
@@ -193,6 +213,7 @@ let compile filename =
 let spec =
   let open Command.Spec in
   empty
+  +> flag "-d" no_arg ~doc:"run with scary de'bug'ging output"
   +> anon("filename" %: file)
   
 let command =
@@ -200,7 +221,7 @@ let command =
   ~summary:"The Spooky language compiler"
   ~readme:(fun () -> "The world's first scary-complete language.")
   spec
-  (fun filename () -> compile filename)
+  (fun debug filename () -> compile debug filename)
 
 let () =
   Command.run ~version:"0.10" ~build_info:"RWO" command

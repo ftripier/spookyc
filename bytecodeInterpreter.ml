@@ -35,6 +35,7 @@ type opcode =
   | CallBuiltin of int
   | IfDefinition of if_definition
   | IfElseDefinition of if_else_definition
+  | LoopDefinition of loop_definition
   | Return
 and function_declaration = {
   symbol: int;
@@ -51,6 +52,10 @@ and if_else_definition = {
   true_code: opcode list;
   false_code: opcode list;
 }
+and loop_definition = {
+  test_code: opcode list;
+  loop_code: opcode list;
+}
 
 let debug_spookyval spval =
   match spval with
@@ -59,6 +64,68 @@ let debug_spookyval spval =
     | Void -> print_string "VOID"
     | Booolean b -> print_string (if b then "TRUE" else "FALSE")
 
+let rec debug_opcodes ops =
+  match ops with
+  | [] -> ()
+  | a :: tl -> (
+    match a with
+    | PushSpookyvalue sp ->
+      print_string "SPOOKYVAL PUSH: ";
+      debug_spookyval sp;
+      print_newline();
+      debug_opcodes tl
+    | BinaryOperation sp ->
+      print_endline "BINOP";
+      debug_opcodes tl
+    | UnaryOperation sp ->
+      print_endline "UNOP";
+      debug_opcodes tl
+    | LoadLocal sp ->
+      print_string "LOAD LOCAL: ";    
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | StoreLocal sp ->
+      print_string "STORE LOCAL: ";    
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | LoadGlobal sp ->
+      print_string "LOAD GLOBAL: ";    
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | StoreGlobal sp ->
+      print_string "STORE GLOBAL: ";    
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | FunctionCall sp ->
+      print_string "FUNCTION CALL: ";
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | CallBuiltin sp ->
+      print_string "CALL_BUILTIN: ";
+      print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | Return ->
+      print_endline "RETURN";
+      debug_opcodes tl      
+    | _ -> debug_opcodes tl
+  )
+
+let debug_opcode_object opcode =
+  match opcode with
+  | LoopDefinition op ->
+    print_endline "LOOP DEFINITION: ";
+    print_endline "TEST_CODE: ";
+    debug_opcodes op.test_code;
+    print_endline "LOOP_CODE: ";
+    debug_opcodes op.loop_code;
+    print_newline()
+  | _ -> ()
 
 let print_spookyval spval =
   match spval with
@@ -140,7 +207,7 @@ let constant_folding op_codes =
       | UnaryOperation unop, PushSpookyvalue vala -> [apply_constant_unary_op vala unop]
       | _, _ -> (op :: optimized)
     )
-    | a :: b :: tl, op -> (
+    | b :: a :: tl, op -> (
       match op, a, b with
       | UnaryOperation unop, PushSpookyvalue vala, _ ->
         (apply_constant_unary_op vala unop) :: b :: tl
@@ -158,6 +225,10 @@ class virtual_machine = object(self)
   val mutable globals = Int.Table.create()
   val mutable registers = ((Array.create ~len:0 (Void)): spookyval array)
   val mutable op_stack = ([] : spookyval list)
+  val mutable debug = false
+
+  method enable_debug =
+    debug <- true
 
   method interpreter_scream =
     match op_stack with
@@ -174,9 +245,14 @@ class virtual_machine = object(self)
       else
         raise (What_r_u_doing_lol "Dear user, the handsome genius behind this program wrote it in the world's first spooky-complete language, a computational model that only accepts spooky I/O.\nYou attempted to input something 'unspooky', and we cannot allow that under our invariants. So the program crashed. Also, there's a skeleton behind you! AHHHHH!")
 
-  method print_registers =
+  method debug_op_stack =
+    print_string "op stack = ";
+    List.iter ~f:(fun a -> debug_spookyval a; print_string " , ") op_stack;
+    print_newline()
+
+  method debug_registers =
     print_string "registers = ";
-    Array.iter ~f:print_spookyval registers;
+    Array.iter ~f:(fun a -> debug_spookyval a; print_string " , ") registers;
     print_newline()
 
   method set_function function_dec =
@@ -194,7 +270,7 @@ class virtual_machine = object(self)
     match op_stack with
     | [] -> raise (What_r_u_doing_lol "There weren't enough operands for this operation. How is this possible when our parser demands operator satisfaction? Who knows. Still seems like your fault. Program crashing because 2 spooky, you know the meme.")
     | one_op :: [] -> raise (What_r_u_doing_lol "There weren't enough operands for this operation. How is this possible when our parser demands operator satisfaction? Who knows. Still seems like your fault. Program crashing because 2 spooky, you know the meme.")
-    | a :: b :: tl -> let result = (apply_binary_op a b op) in (result :: tl)
+    | b :: a :: tl -> let result = (apply_binary_op a b op) in (result :: tl)
   
   method unary_op op =
     match op_stack with
@@ -211,8 +287,8 @@ class virtual_machine = object(self)
   method push_arguments num_args num_locals =
     let arguments = Array.create ~len:(num_args + num_locals) (Void) in
     let rec pop args_left =
-      let index = num_args - args_left in 
-      if args_left == 0 then () else (
+      let index = args_left in 
+      if args_left == -1 then () else (
       match op_stack with
       | [] -> raise (What_r_u_doing_lol "Just one operand oh my god it's not that hard.")
       | a :: tl ->
@@ -220,8 +296,43 @@ class virtual_machine = object(self)
         Array.set arguments index a;
         pop (args_left - 1)
       ) in
-    pop num_args;
+    pop (num_args - 1);
     registers <- arguments
+  
+  method try_loop (loop_statement:loop_definition) =
+    if debug then (
+      print_endline "LOOP ITERATION";
+      self#debug_registers;
+      self#debug_op_stack
+    );
+    self#interpret_opcodes (Stream.of_list loop_statement.test_code);
+    self#test_op_stack (fun a ->
+      if debug then (
+        print_endline "AFTER LOOP TEST";
+        self#debug_registers;
+        self#debug_op_stack;
+        print_string "TEST RESULT: ";
+        debug_spookyval a;
+        print_newline()
+      );
+      match a with
+      | Void -> ()
+      | Booolean spookyval -> (
+        if spookyval then (
+          self#interpret_opcodes (Stream.of_list loop_statement.loop_code);
+          self#try_loop loop_statement
+        )
+        else ()
+      )
+      | Numeric spookyval ->
+        if spookyval =. 0.0 then ()
+        else
+          self#interpret_opcodes (Stream.of_list loop_statement.loop_code);
+          self#try_loop loop_statement    
+      | _ ->
+        self#interpret_opcodes (Stream.of_list loop_statement.loop_code);
+        self#try_loop loop_statement        
+    );
 
   method interpret_opcodes opcodes = 
     match Stream.peek opcodes, op_stack with
@@ -305,6 +416,10 @@ class virtual_machine = object(self)
           | _ -> self#interpret_opcodes (Stream.of_list if_else_statement.true_code)
         );
         self#interpret_opcodes opcodes
+      | LoopDefinition loop_statement ->
+        Stream.junk opcodes;      
+        self#try_loop loop_statement;
+        self#interpret_opcodes opcodes  
       | FunctionCall op ->
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
@@ -364,59 +479,7 @@ let rec buffer_opcodes ?b:(buffered=[]) ops =
     Stream.junk ops;
     buffer_opcodes ~b:(a :: buffered) ops
 
-let rec print_opcodes ops =
-  match ops with
-  | [] -> ()
-  | a :: tl -> (
-    match a with
-    | PushSpookyvalue sp ->
-      print_string "SPOOKYVAL PUSH: ";
-      print_spookyval sp;
-      print_newline();
-      print_opcodes tl
-    | BinaryOperation sp ->
-      print_endline "BINOP";
-      print_opcodes tl
-    | UnaryOperation sp ->
-      print_endline "UNOP";
-      print_opcodes tl
-    | LoadLocal sp ->
-      print_string "LOAD LOCAL: ";    
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | StoreLocal sp ->
-      print_string "STORE LOCAL: ";    
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | LoadGlobal sp ->
-      print_string "LOAD GLOBAL: ";    
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | StoreGlobal sp ->
-      print_string "STORE GLOBAL: ";    
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | FunctionCall sp ->
-      print_string "FUNCTION CALL: ";
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | CallBuiltin sp ->
-      print_string "CALL_BUILTIN: ";
-      print_int sp;
-      print_newline();
-      print_opcodes tl
-    | Return ->
-      print_endline "RETURN";
-      print_opcodes tl      
-    | _ -> print_opcodes tl
-  )
-
-let rec opcodes bytes =
+let rec opcodes ?d:(debug=false) bytes =
   let next_opcode i =
     match Stream.peek bytes with
     | None -> None
@@ -434,7 +497,7 @@ let rec opcodes bytes =
           let symbol = Int32.to_int_exn (consume_operand bytes) in
           let num_parameters = Int32.to_int_exn (consume_operand bytes) in
           let num_locals = Int32.to_int_exn (consume_operand bytes) in
-          let buffered = buffer_opcodes (opcodes bytes) in     
+          let buffered = buffer_opcodes (opcodes ~d:debug bytes) in     
           let op_codes = optimize_ops buffered in
           Some (FunctionDeclaration {
             symbol;
@@ -460,31 +523,48 @@ let rec opcodes bytes =
         | 24 -> Stream.junk bytes; Some (BinaryOperation(Lequal))
         | 25 ->
           Stream.junk bytes;
-          let test_buffered = buffer_opcodes (opcodes bytes) in
+          let test_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
           let test_code = optimize_ops test_buffered in
-          let execution_buffered = buffer_opcodes (opcodes bytes) in
+          let execution_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
           let execution_code = optimize_ops execution_buffered in
           Some (IfDefinition {
             test_code;
             execution_code;
           })
         | 26 ->
-        Stream.junk bytes;
-          let test_buffered = buffer_opcodes (opcodes bytes) in
+          Stream.junk bytes;
+          let test_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
           let test_code = optimize_ops test_buffered in
-          let true_buffered = buffer_opcodes (opcodes bytes) in
+          let true_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
           let true_code = optimize_ops true_buffered in
-          let false_buffered = buffer_opcodes (opcodes bytes) in
+          let false_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
           let false_code = optimize_ops false_buffered in
           Some (IfElseDefinition {
             test_code;
             true_code;
             false_code;
           })
+        | 27 ->
+          Stream.junk bytes;
+          let test_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
+          let test_code = optimize_ops test_buffered in
+          let loop_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
+          let loop_code = optimize_ops loop_buffered in
+          let loop_def = LoopDefinition {
+            test_code;
+            loop_code;
+          } in
+          if debug then debug_opcode_object loop_def;
+          Some loop_def
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)
 
-let interpret bytestream =
+let interpret ?d:(debug=false) bytestream =
+  if debug then (
+    print_endline "DEBUGGING BYTECODE: ";
+    print_newline()
+  );
   let vm = new virtual_machine in
-  vm#interpret_opcodes (opcodes bytestream)
+  if debug then vm#enable_debug;
+  vm#interpret_opcodes (opcodes ~d:debug bytestream)

@@ -577,7 +577,7 @@ let rec opcodes ?d:(debug=false) bytes =
           } in
           if debug then debug_opcode_object loop_def;
           Some loop_def
-        | 28 -> Stream.junk bytes; Some (BinaryOperation(Lequal));
+        | 28 -> Stream.junk bytes; Some (BinaryOperation(Nequal));
         | 29 -> Stream.junk bytes; Some (UnaryOperation(Not))
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )

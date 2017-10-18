@@ -29,6 +29,7 @@ type node =
   | IfElseStatement of { test: node; if_statements: node list; else_statements: node list }
   | LoopStatement of { test: node; statements: node list }
   | Statement of { children: node list; }
+  | Accessor of { store: node; key: node }
   | Operator of operator
 and operator = 
   | Multiplication of { children: node list; }
@@ -86,6 +87,7 @@ let serialize_node (n: node) =
     | IfStatement n -> "IfStatement!\n"
     | IfElseStatement n -> "IfElseStatement!\n"
     | LoopStatement n -> "WhileStatement!\n"
+    | Accessor n -> "Accessor!\n";
     | Operator n -> serialize_operator n
 
 (* TODO: make tail-call recursive *)
@@ -138,6 +140,13 @@ let rec print_ast ?level:(l=0) (syntax:node) =
     print_endline "Statements:";
     List.iter ~f:(print_ast ~level:(l + 1)) syntax.statements
   | Statement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
+  | Accessor syntax ->
+    print_string (print_level l);  
+    print_endline "Store:";
+    print_ast ~level:(l + 1) syntax.store;
+    print_string (print_level l);    
+    print_endline "Key:";
+    print_ast ~level:(l + 1) syntax.key;    
   | Operator syntax -> 
     match syntax with
     | Multiplication syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 

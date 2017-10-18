@@ -2,6 +2,7 @@
 %token PLUS MINUS TIMES DIV
 %token LESS GREATER GEQUAL LEQUAL EQUAL NEQUAL
 %token NOT
+%token START_ACCESSOR END_ACCESSOR
 %token IF ELSE
 %token LPAREN RPAREN
 %token LBRACE RBRACE
@@ -125,6 +126,8 @@ expr:
     { Ast.Operator(Ast.Greater {a = e1; b = e2;}) }
 | e1 = expr LESS e2 = expr
     { Ast.Operator(Ast.Less {a = e1; b = e2;}) }
+| store = expr START_ACCESSOR key = expr END_ACCESSOR
+    { Ast.Accessor { store; key; } }
 | MINUS e = expr %prec UMINUS
     {  Ast.Operator(Ast.Negation { children = [e]; }) }
 | NOT inverted = expr

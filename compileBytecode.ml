@@ -121,6 +121,7 @@ let rec compile_ast symbol_table syntax =
     | Ast.IfStatement syntax -> compile_if_statement syntax.test syntax.statements symbol_table
     | Ast.IfElseStatement syntax -> compile_if_else_statement syntax.test syntax.if_statements syntax.else_statements symbol_table
     | Ast.LoopStatement syntax -> compile_loop_statement syntax.test syntax.statements symbol_table
+    | Ast.Accessor syntax -> compile_accessor syntax.store syntax.key symbol_table
     | Ast.Operator syntax -> 
       match syntax with
       | Ast.Multiplication syntax -> List.append
@@ -178,6 +179,12 @@ and compile_loop_statement test_code execution_code symbol_table =
   let statements = List.append (compile_statements execution_code symbol_table) [Int32.of_int_exn 9] in
   let conditional = List.append test statements in
   List.append [Int32.of_int_exn 27] conditional
+
+and compile_accessor store_code key_code symbol_table =
+  let store = List.append (compile_ast symbol_table store_code) [Int32.of_int_exn 9] in
+  let key = List.append (compile_ast symbol_table key_code) [Int32.of_int_exn 9] in
+  let store_key = List.append store key in
+  List.append [Int32.of_int_exn 30] store_key
 
 let compile debug filename =
   let input = open_in filename in

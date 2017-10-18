@@ -38,6 +38,7 @@ type opcode =
   | IfDefinition of if_definition
   | IfElseDefinition of if_else_definition
   | LoopDefinition of loop_definition
+  | Accessor of accessor
   | Return
 and function_declaration = {
   symbol: int;
@@ -57,6 +58,10 @@ and if_else_definition = {
 and loop_definition = {
   test_code: opcode list;
   loop_code: opcode list;
+}
+and accessor = {
+  store_code: opcode list;
+  key_code: opcode list;
 }
 
 let debug_spookyval spval =
@@ -110,6 +115,10 @@ let rec debug_opcodes ops =
     | CallBuiltin sp ->
       print_string "CALL_BUILTIN: ";
       print_int sp;
+      print_newline();
+      debug_opcodes tl
+    | Accessor sp ->
+      print_string "ACCESSOR: ";
       print_newline();
       debug_opcodes tl
     | Return ->
@@ -297,6 +306,13 @@ class virtual_machine = object(self)
     match op_stack with
     | [] -> raise (What_r_u_doing_lol "There weren't enough operands for this... unary op. You just needed one man, come on. Gotta do the meme: So scared! Crashing the program!")
     | a :: tl -> let result = (apply_unary_op a op) in (result :: tl)
+
+  method get_op_top =
+    match op_stack with
+    | [] -> Void
+    | a :: tl ->
+      op_stack <- tl;
+      a
   
   method test_op_stack test =
     match op_stack with
@@ -408,6 +424,25 @@ class virtual_machine = object(self)
       | FunctionDeclaration op ->
         Stream.junk opcodes;      
         self#set_function op;
+        self#interpret_opcodes opcodes
+      | Accessor accessor ->
+        Stream.junk opcodes;
+        self#interpret_opcodes (Stream.of_list accessor.store_code);
+        self#test_op_stack (fun store ->
+          op_stack <- (match store with
+            | Spookystring sp ->
+              self#interpret_opcodes (Stream.of_list accessor.key_code);
+              let key = self#get_op_top in (
+                match key with
+                | Numeric n ->
+                  let index = Int.of_float n in
+                  let cr = String.get sp index in
+                  Spookystring(String.of_char cr)
+                | _ -> Void
+              )
+            | _ -> Void
+          ) :: op_stack
+        );
         self#interpret_opcodes opcodes
       | IfDefinition if_statement ->
         Stream.junk opcodes;
@@ -579,6 +614,16 @@ let rec opcodes ?d:(debug=false) bytes =
           Some loop_def
         | 28 -> Stream.junk bytes; Some (BinaryOperation(Nequal));
         | 29 -> Stream.junk bytes; Some (UnaryOperation(Not))
+        | 30 ->
+          Stream.junk bytes;
+          let store_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
+          let store_code = optimize_ops store_buffered in
+          let key_buffered = buffer_opcodes (opcodes ~d:debug bytes) in
+          let key_code = optimize_ops key_buffered in
+          Some (Accessor {
+            store_code;
+            key_code;
+          })
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

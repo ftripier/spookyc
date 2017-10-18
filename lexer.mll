@@ -15,6 +15,10 @@ rule token = parse
     { Lexing.new_line lexbuf; token lexbuf }
 | '"'
     { STR (string (Buffer.create 100) lexbuf) }
+| "🗡️"
+    { START_ACCESSOR }
+| "🕯️"
+    { END_ACCESSOR }
 | "⚰️"
     { VOID }
 | "🌝"
@@ -27,7 +31,7 @@ rule token = parse
     { VAR_DEC }
 | "🍬"
     { RETURN }
-| "🗡️"
+| "⚡"
     { NOT }
 | '+'
     { PLUS }
@@ -47,7 +51,7 @@ rule token = parse
     { LEQUAL }
 | ">="
     { GEQUAL }
-| "🗡️="
+| "⚡="
     { NEQUAL }
 | "🎃"
     { SEMICOLON }

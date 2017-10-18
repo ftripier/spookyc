@@ -35,8 +35,9 @@ let push_spookyval spookyval =
 
 let call_builtin function_name =
   match function_name with
-  | "interpreter_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
-  | "creppy_whispers_from_outside" -> [Int32.of_int_exn 15; Int32.of_int_exn 1]
+  | "print_and_then_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
+  | "spooky_input" -> [Int32.of_int_exn 15; Int32.of_int_exn 1]
+  | "scary_length" -> [Int32.of_int_exn 15; Int32.of_int_exn 2]
   | _ -> raise (CompileError "Ahhhh! That variable you thought existed actually didn't.")
 
 let rec print_ops ops =

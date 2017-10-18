@@ -1,11 +1,11 @@
 👻 uh_oh_skeletons 👿 scream_a 🕸️ scream_b 😈 💀
   😨 👿scream_a > scream_b😈 💀
-    interpreter_scream👿 "skeletons! " + scream_a 😈🎃
+    print_and_then_scream👿 "skeletons! " + scream_a 😈🎃
   ☠️ 😰 💀
     😨 👿scream_a < scream_b😈 💀
-      interpreter_scream👿 "ghosts! " + scream_b 😈🎃
+      print_and_then_scream👿 "ghosts! " + scream_b 😈🎃
     ☠️ 😰 💀
-      interpreter_scream👿 "goblins! " + scream_b + " " + scream_a 😈🎃
+      print_and_then_scream👿 "goblins! " + scream_b + " " + scream_a 😈🎃
     ☠️
   ☠️
   🍬 ⚰️🎃

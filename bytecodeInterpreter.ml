@@ -260,7 +260,7 @@ class virtual_machine = object(self)
   method enable_debug =
     debug <- true
 
-  method interpreter_scream =
+  method print_and_then_scream =
     match op_stack with
       | [] -> print_endline "AHHHHHHHHHHHH!"
       | a :: tl ->
@@ -268,12 +268,20 @@ class virtual_machine = object(self)
         print_endline "AHHHHHHHHHHHH!";
         op_stack <- tl
 
-  method creppy_whispers_from_outside =
+  method spooky_input =
     let very_creppy = read_line() in
       if IsItScary.its_scary very_creppy then
         op_stack <- (Spookystring(very_creppy) :: op_stack)
       else
         raise (What_r_u_doing_lol "Dear user, the handsome genius behind this program wrote it in the world's first spooky-complete language, a computational model that only accepts spooky I/O.\nYou attempted to input something 'unspooky', and we cannot allow that under our invariants. So the program crashed. Also, there's a skeleton behind you! AHHHHH!")
+
+  method scary_length =
+    let top = self#get_op_top in
+    op_stack <- (
+    match top with
+    | Spookystring sp -> Numeric(Int.to_float (String.length sp))
+    | _ -> Void
+    ) :: op_stack
 
   method debug_op_stack =
     print_string "op stack = ";
@@ -492,8 +500,9 @@ class virtual_machine = object(self)
       | CallBuiltin op ->
         Stream.junk opcodes;
         (match op with
-          | 0 -> self#interpreter_scream
-          | 1 -> self#creppy_whispers_from_outside
+          | 0 -> self#print_and_then_scream
+          | 1 -> self#spooky_input
+          | 2 -> self#scary_length
           | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
         );
         self#interpret_opcodes opcodes

@@ -15,7 +15,7 @@ exception Error of string
 
 let rec count_symbols test_symbol table =
   let num_symbols = ref 0 in
-  Hashtbl.iter table.symbols ~f:(
+  Hashtbl.iter_vals table.symbols ~f:(
     fun a -> if test_symbol a then num_symbols := !num_symbols + 1
   );
   match table.previous with
@@ -37,13 +37,6 @@ let number_of_functions table =
     | _ -> false
   )) table
 
-let number_of_variables table =
-  count_symbols (fun dec -> (
-    match dec with
-    | VariableDeclaration dec -> true
-    | _ -> false
-  )) table
-
 let rec print_table ?level:(l=0) table =
   Hashtbl.iter_keys table.symbols ~f:(
     fun a ->
@@ -53,17 +46,24 @@ let rec print_table ?level:(l=0) table =
         match dec with
         | FunctionDeclaration dec ->
           print_string (Ast.print_level l);
-          Printf.printf "%s : %d\n%!" a dec.index;          
+          Printf.printf "Function: %s : %d\n%!" a dec.index;          
           print_table ~level:(l+1) dec.parameters;
           print_table ~level:(l+1) dec.locals;
         | GlobalVariableDeclaration dec ->
           print_string (Ast.print_level l);
-          Printf.printf "%s : %d\n%!" a dec;
+          Printf.printf "Global: %s : %d\n%!" a dec;
         | VariableDeclaration dec ->
           print_string (Ast.print_level l);
-          Printf.printf "%s : %d\n%!" a dec          
+          Printf.printf "Local: %s : %d\n%!" a dec          
       )
   )
+
+let number_of_variables table =
+  count_symbols (fun dec -> (
+    match dec with
+    | VariableDeclaration dec -> true
+    | _ -> false
+  )) table
 
 let rec find_symbol symbol table =
   let search = Hashtbl.find table.symbols symbol in
@@ -95,7 +95,7 @@ let rec add_symbol (symbol:Ast.node) table =
     (match table.previous with
       | None ->
         (s.id, GlobalVariableDeclaration(number_of_globals table))
-      | Some table ->
+      | Some p ->
         (s.id, VariableDeclaration(number_of_variables table))    
     )
   ) in

@@ -62,37 +62,44 @@ let serialize_operator n =
   | Greater n -> "Greater!\n"
   | Nequal n -> "Nequal!\n"
 
-let serialize_spookyval n =
+let rec serialize_node (n: node) =
   match n with
-  | Numeric num -> string_of_float num
-  | Spookystring st -> st
-  | True -> "True"
-  | False -> "False"  
-  | Void -> "Void"
-  | Array ar -> "Array"
-  | Object ob -> "Object"
-
-let serialize_node (n: node) =
-  match n with
-    | Program n -> "Program!\n"  
-    | Spookyval n -> Printf.sprintf "Spookyval!: %s\n%!" (serialize_spookyval n)
-    | Expression n -> "Expression!\n"
-    | Reference n -> Printf.sprintf "Reference!: %s\n%!" n
-    | Statement n -> "Statement!\n"
-    | ReturnStatement n -> "ReturnStatement!\n"    
-    | FunctionDeclaration n -> Printf.sprintf "FunctionDeclaration!: %s\n%!" n.id
-    | ParamDeclaration n -> Printf.sprintf "ParamDeclaration!: %s\n%!" n   
-    | FunctionCall n -> Printf.sprintf "FunctionCall!: %s\n%!" n.id
-    | ArgumentList n -> "ArgumentList!\n"    
-    | StatementList n -> "StatementList!\n"
-    | ParameterList n -> "ParameterList!\n"
-    | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s\n%!" n.id
-    | VariableAssignment n -> "VariableAssignment!\n"
-    | IfStatement n -> "IfStatement!\n"
-    | IfElseStatement n -> "IfElseStatement!\n"
-    | LoopStatement n -> "WhileStatement!\n"
-    | Accessor n -> "Accessor!\n";
+    | Program n -> "Program!"  
+    | Spookyval n -> Printf.sprintf "Spookyval!: %s%!" (serialize_spookyval n)
+    | Expression n -> "Expression!"
+    | Reference n -> Printf.sprintf "Reference!: %s%!" n
+    | Statement n -> "Statement!"
+    | ReturnStatement n -> "ReturnStatement!"    
+    | FunctionDeclaration n -> Printf.sprintf "FunctionDeclaration!: %s%!" n.id
+    | ParamDeclaration n -> Printf.sprintf "ParamDeclaration!: %s%!" n   
+    | FunctionCall n -> Printf.sprintf "FunctionCall!: %s%!" n.id
+    | ArgumentList n -> "ArgumentList!"    
+    | StatementList n -> "StatementList!"
+    | ParameterList n -> "ParameterList!"
+    | VariableDeclaration n -> Printf.sprintf "VariableDeclaration!: %s%!" n.id
+    | VariableAssignment n -> "VariableAssignment!"
+    | IfStatement n -> "IfStatement!"
+    | IfElseStatement n -> "IfElseStatement!"
+    | LoopStatement n -> "WhileStatement!"
+    | Accessor n -> "Accessor!";
     | Operator n -> serialize_operator n
+
+and serialize_spookyval n =
+      match n with
+      | Numeric num -> string_of_float num
+      | Spookystring st -> st
+      | True -> "True"
+      | False -> "False"  
+      | Void -> "Void"
+      | Array a ->
+        " 🍫 " ^
+        (List.fold_right a ~init:"" ~f:(fun spval acc -> acc ^ (serialize_node spval) ^ " 🍬 ")) ^
+        " 🍭 "
+      | Object o ->
+        " 🍫 " ^ (List.fold_right o ~init:"" ~f:(fun spval acc ->
+          let k, sval = spval in
+          acc ^ k ^ " 😱 " ^ (serialize_node sval) ^ " 🍬 ")
+        ) ^ " 🍭 "
 
 (* TODO: make tail-call recursive *)
 let rec print_level l = 

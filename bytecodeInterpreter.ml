@@ -91,7 +91,7 @@ let rec spooky_to_string spval =
   | Booolean b -> if b then "True" else "False"
   | Array a ->
     "🍫\n" ^
-    (Array.fold_right a ~init:"" ~f:(fun spval acc -> acc ^ (spooky_to_string spval) ^ "🍬\n")) ^
+    (Array.fold_right a ~init:"" ~f:(fun spval acc -> (spooky_to_string spval) ^ "🍬\n" ^ acc)) ^
     "🍭\n"
   | Object o ->
     "🍫\n" ^ Hashtbl.fold o ~init:"" ~f:(
@@ -134,7 +134,7 @@ let print_spookyval spval =
 let debug_spookyval spval =
   match spval with
     | Numeric n ->
-      print_string "BOOLEAN: ";
+      print_string "NUMERIC: ";
       print_endline (spooky_to_string spval)   
     | Spookystring s ->
       print_string "SPOOKYSTRING: ";
@@ -237,6 +237,16 @@ let apply_binary_op a b op =
     | Numeric a, Numeric b -> Numeric(a +. b)
     | _, Spookystring bsp -> Spookystring (spooky_to_string a ^ bsp)
     | Spookystring bsp, _ -> Spookystring (bsp ^ spooky_to_string b)
+    | spval, Array arr -> (
+      match spval with
+      | Array arrb -> Array (Array.append arrb arr)
+      | _ -> Array (Array.append (Array.of_list [spval]) arr)
+    )
+    | Array arr, spval -> (
+      match spval with
+      | Array arrb -> Array (Array.append arr arrb)
+      | _ -> Array (Array.append arr (Array.of_list [spval]))
+    )
     | _, _ -> Void)
   | DivideNumeric ->
     (match a, b with
@@ -570,15 +580,19 @@ class virtual_machine = object(self)
         Stream.junk opcodes;
         let len = array_literal_definition.length in
         let arr = Array(Array.create ~len:len Void) in
+        let old_context = context in
         self#set_context arr;
         op_stack <- (arr :: op_stack);
         self#interpret_opcodes (Stream.of_list array_literal_definition.assignments);
+        self#set_context old_context;
         self#interpret_opcodes opcodes        
       | ObjectLiteralDefinition object_literal_definition ->
         let obj = Object(String.Table.create()) in
+        let old_context = context in        
         self#set_context obj;
         op_stack <- (obj :: op_stack);
         self#interpret_opcodes (Stream.of_list object_literal_definition);
+        self#set_context old_context;        
         self#interpret_opcodes opcodes        
       | Assignment a ->
         Stream.junk opcodes;

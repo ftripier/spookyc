@@ -3,6 +3,7 @@
 %token LESS GREATER GEQUAL LEQUAL EQUAL NEQUAL
 %token NOT
 %token START_ACCESSOR END_ACCESSOR
+%token COLLECTION_LITERAL_LEFT COLLECTION_LITERAL_RIGHT
 %token IF ELSE
 %token LPAREN RPAREN
 %token LBRACE RBRACE
@@ -85,6 +86,18 @@ argument_list:
 | param = expr RPAREN { [param] }
 | param = expr COMMA p = argument_list {  param :: p }
 
+array_list:
+| COLLECTION_LITERAL_RIGHT { [] }
+| e = expr COLLECTION_LITERAL_RIGHT { [e] }
+| e = expr RETURN COLLECTION_LITERAL_RIGHT { [e] }
+| e = expr RETURN es = array_list { e :: es }
+
+key_value_list:
+| COLLECTION_LITERAL_LEFT { [] }
+| key = STR ASSIGN e = expr COLLECTION_LITERAL_RIGHT { [(key, e)] }
+| key = STR ASSIGN e = expr RETURN COLLECTION_LITERAL_RIGHT { [(key, e)] }
+| key = STR ASSIGN e = expr RETURN kvlist = key_value_list { (key, e) :: kvlist }
+
 expr:
 | v = VOID
     { Ast.Spookyval(Ast.Void) }
@@ -96,6 +109,10 @@ expr:
     { Ast.Spookyval(Ast.True) }
 | f = FALSE
     { Ast.Spookyval(Ast.False) }
+| COLLECTION_LITERAL_LEFT exp = array_list
+    { Ast.Spookyval(Ast.Array(exp)) }
+| COLLECTION_LITERAL_LEFT exp = key_value_list
+    { Ast.Spookyval(Ast.Object(exp)) }
 | id = ID
     { Ast.Reference id }
 | id = ID LPAREN args = argument_list {
@@ -126,6 +143,8 @@ expr:
     { Ast.Operator(Ast.Greater {a = e1; b = e2;}) }
 | e1 = expr LESS e2 = expr
     { Ast.Operator(Ast.Less {a = e1; b = e2;}) }
+| e1 = expr NEQUAL e2 = expr
+    { Ast.Operator(Ast.Nequal {a = e1; b = e2;}) }
 | store = expr START_ACCESSOR key = expr END_ACCESSOR
     { Ast.Accessor { store; key; } }
 | MINUS e = expr %prec UMINUS

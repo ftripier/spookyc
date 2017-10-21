@@ -4,13 +4,6 @@ open Core
 nonterminal nodes to something more semantically informative. *)
 (* TODO: perhaps these types could be factored into nonterminal nodes, and
 terminal nodes *)
-type spookyval =
-  | Numeric of float
-  | Spookystring of string
-  | True
-  | False
-  | Void
-
 type node =
   | Program of { children: node list; }
   | Spookyval of spookyval
@@ -44,6 +37,15 @@ and operator =
   | Lequal of { a: node; b: node; }
   | Less of { a: node; b: node; }
   | Greater of { a: node; b: node; }
+and key_value = string * node
+and spookyval =
+| Numeric of float
+| Spookystring of string
+| True
+| False
+| Void
+| Array of node list
+| Object of key_value list
 
 let serialize_operator n =
   match n with
@@ -67,6 +69,8 @@ let serialize_spookyval n =
   | True -> "True"
   | False -> "False"  
   | Void -> "Void"
+  | Array ar -> "Array"
+  | Object ob -> "Object"
 
 let serialize_node (n: node) =
   match n with

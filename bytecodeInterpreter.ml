@@ -19,6 +19,8 @@ type spookyval =
   | Spookystring of string
   | Void
   | Booolean of bool
+  | Array of spookyval array
+  | Object of spookyval String.Table.t
 
 type unary_operation =
   | Negation
@@ -39,6 +41,9 @@ type opcode =
   | IfElseDefinition of if_else_definition
   | LoopDefinition of loop_definition
   | Accessor of accessor
+  | ArrayLiteralDefinition of array_literal_definition
+  | ObjectLiteralDefinition of opcode list
+  | Assignment of key_val
   | Return
 and function_declaration = {
   symbol: int;
@@ -63,13 +68,30 @@ and accessor = {
   store_code: opcode list;
   key_code: opcode list;
 }
+and key_val = (opcode list * opcode list)
+and array_literal_definition = {
+  length: int;
+  assignments: opcode list;
+}
 
-let debug_spookyval spval =
+let rec debug_spookyval spval =
   match spval with
     | Numeric n -> print_float n
     | Spookystring s -> Printf.printf "SPOOKYSTRING: %s" s
     | Void -> print_string "VOID"
     | Booolean b -> print_string (if b then "TRUE" else "FALSE")
+    | Object o ->
+      print_endline "OBJECT: ";
+      Hashtbl.iteri o ~f:(
+        fun ~key:k ~data:spval ->
+          print_string "Key: ";
+          print_endline k;
+          debug_spookyval spval;
+          print_newline()
+      )
+    | Array arr ->
+      print_string "ARRAY: ";
+      Array.iter arr ~f:(fun spval -> debug_spookyval spval; print_string " ")
 
 let rec debug_opcodes ops =
   match ops with
@@ -123,7 +145,10 @@ let rec debug_opcodes ops =
       debug_opcodes tl
     | Return ->
       print_endline "RETURN";
-      debug_opcodes tl      
+      debug_opcodes tl
+    | Assignment a ->
+      print_endline "ASSIGNMENT";
+      debug_opcodes tl
     | _ -> debug_opcodes tl
   )
 
@@ -256,6 +281,7 @@ class virtual_machine = object(self)
   val mutable registers = ((Array.create ~len:0 (Void)): spookyval array)
   val mutable op_stack = ([] : spookyval list)
   val mutable debug = false
+  val mutable context = Void
 
   method enable_debug =
     debug <- true
@@ -280,6 +306,7 @@ class virtual_machine = object(self)
     op_stack <- (
     match top with
     | Spookystring sp -> Numeric(Int.to_float (String.length sp))
+    | Array arr -> Numeric(Int.to_float (Array.length arr))
     | _ -> Void
     ) :: op_stack
 
@@ -328,6 +355,35 @@ class virtual_machine = object(self)
     | a :: tl ->
       op_stack <- tl;
       test a
+
+  method eval expr =
+    self#interpret_opcodes (Stream.of_list expr);
+    self#get_op_top
+
+  method set_context obj =
+    context <- obj
+
+  method assign_to_context key spval =
+    if debug then (
+      print_endline "ASSIGNING TO CONTEXT!";
+      print_string "KEY: ";
+      debug_spookyval key;
+      print_newline();
+      print_string "VAL: ";
+      debug_spookyval spval;
+      print_newline()
+    );
+    match context with
+    | Array arr -> ( match key with
+      | Numeric key ->
+        let index = Int.of_float key in
+        Array.set arr index spval;
+      | _ -> ())
+    | Object o ->
+      let str_key = spooky_to_string key in
+      Hashtbl.set o ~key:str_key ~data:spval
+    | _ -> ()
+
   
   method push_arguments num_args num_locals =
     let arguments = Array.create ~len:(num_args + num_locals) (Void) in
@@ -437,9 +493,10 @@ class virtual_machine = object(self)
         Stream.junk opcodes;
         self#interpret_opcodes (Stream.of_list accessor.store_code);
         self#test_op_stack (fun store ->
-          op_stack <- (match store with
+          op_stack <- (
+            self#interpret_opcodes (Stream.of_list accessor.key_code);            
+            match store with
             | Spookystring sp ->
-              self#interpret_opcodes (Stream.of_list accessor.key_code);
               let key = self#get_op_top in (
                 match key with
                 | Numeric n ->
@@ -447,6 +504,21 @@ class virtual_machine = object(self)
                   let cr = String.get sp index in
                   Spookystring(String.of_char cr)
                 | _ -> Void
+              )
+            | Array arr ->
+              let key = self#get_op_top in (
+                match key with
+                | Numeric n ->
+                  let index = Int.of_float n in
+                  Array.get arr index
+                | _ -> Void
+              )
+            | Object obj ->
+              let key = self#get_op_top in (
+                let str_key = spooky_to_string key in
+                match Hashtbl.find obj str_key with
+                | Some spval -> spval
+                | None -> Void
               )
             | _ -> Void
           ) :: op_stack
@@ -483,7 +555,28 @@ class virtual_machine = object(self)
       | LoopDefinition loop_statement ->
         Stream.junk opcodes;      
         self#try_loop loop_statement;
-        self#interpret_opcodes opcodes  
+        self#interpret_opcodes opcodes
+      | ArrayLiteralDefinition array_literal_definition ->
+        Stream.junk opcodes;
+        let len = array_literal_definition.length in
+        let arr = Array(Array.create ~len:len Void) in
+        self#set_context arr;
+        op_stack <- (arr :: op_stack);
+        self#interpret_opcodes (Stream.of_list array_literal_definition.assignments);
+        self#interpret_opcodes opcodes        
+      | ObjectLiteralDefinition object_literal_definition ->
+        let obj = Object(String.Table.create()) in
+        self#set_context obj;
+        op_stack <- (obj :: op_stack);
+        self#interpret_opcodes (Stream.of_list object_literal_definition);
+        self#interpret_opcodes opcodes        
+      | Assignment a ->
+        Stream.junk opcodes;
+        let key_expr, val_expr = a in
+        let key = self#eval key_expr in
+        let spval = self#eval val_expr in
+        self#assign_to_context key spval;
+        self#interpret_opcodes opcodes        
       | FunctionCall op ->
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
@@ -543,6 +636,15 @@ let rec buffer_opcodes ?b:(buffered=[]) ops =
   | Some a ->
     Stream.junk ops;
     buffer_opcodes ~b:(a :: buffered) ops
+
+let rec buffer_assignments ?b:(buffered=[]) ops =
+  match Stream.peek ops with
+  | None -> List.rev buffered
+  | Some a ->
+    Stream.junk ops;
+    match a with
+    | Assignment kv -> buffer_assignments ~b:(a :: buffered) ops
+    | _ -> buffer_assignments ~b:buffered ops
 
 let rec opcodes ?d:(debug=false) bytes =
   let next_opcode i =
@@ -633,6 +735,24 @@ let rec opcodes ?d:(debug=false) bytes =
             store_code;
             key_code;
           })
+        | 31 ->
+          Stream.junk bytes;
+          let length = Int32.to_int_exn (consume_operand bytes) in
+          let assignment_codes = opcodes ~d:debug bytes in
+          let assignments = buffer_assignments assignment_codes in
+          Some (ArrayLiteralDefinition {
+            length;
+            assignments;
+          })
+        | 32 ->
+          Stream.junk bytes;
+          let assignments = buffer_assignments (opcodes ~d:debug bytes) in
+          Some (ObjectLiteralDefinition assignments)
+        | 33 ->
+          Stream.junk bytes;
+          let key = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in
+          let spvalue = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in
+          Some (Assignment (key, spvalue))
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

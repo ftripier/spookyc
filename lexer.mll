@@ -19,6 +19,10 @@ rule token = parse
     { START_ACCESSOR }
 | "🕯️"
     { END_ACCESSOR }
+| "🍫"
+    { COLLECTION_LITERAL_LEFT }
+| "🍭"
+    { COLLECTION_LITERAL_RIGHT }
 | "⚰️"
     { VOID }
 | "🌝"

@@ -16,23 +16,6 @@ let add_main_call symbol_table opcodes =
   let main_call = [Int32.of_int_exn 10; Int32.of_int_exn main_func_index] in
   List.append opcodes main_call
 
-let push_spookyval spookyval =
-  match spookyval with
-  | Ast.Numeric syntax ->
-    let bits = Int64.bits_of_float syntax in
-    let top_bits = Int64.to_int32_exn (Int64.shift_right_logical bits 32) in
-    let bottom_bits = Int64.to_int32_exn (Int64.bit_and bits (Int64.shift_right_logical Int64.max_value 32)) in
-    [(Int32.of_int_exn 1); top_bits; bottom_bits]
-  | Ast.Spookystring syntax ->
-    let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
-    let contents = List.map (List.rev (String.to_list_rev syntax)) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
-    List.append instruction contents
-  | Ast.True ->
-    [(Int32.of_int_exn 18)]
-  | Ast.False ->
-    [(Int32.of_int_exn 19)]
-  | Ast.Void -> [(Int32.of_int_exn 14)]
-
 let call_builtin function_name =
   match function_name with
   | "print_and_then_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
@@ -52,7 +35,7 @@ let rec print_ops ops =
 let rec compile_ast symbol_table syntax =
     match syntax with
     | Ast.Program syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
-    | Ast.Spookyval syntax -> push_spookyval syntax
+    | Ast.Spookyval syntax -> push_spookyval syntax symbol_table
     | Ast.Expression syntax -> List.fold_left syntax.children ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
     | Ast.Reference syntax ->
         let declaration = SymbolTable.find_symbol syntax symbol_table in
@@ -187,6 +170,57 @@ and compile_accessor store_code key_code symbol_table =
   let store_key = List.append store key in
   List.append [Int32.of_int_exn 30] store_key
 
+and push_spookyval spookyval symbol_table =
+  match spookyval with
+  | Ast.Numeric syntax ->
+    let bits = Int64.bits_of_float syntax in
+    let top_bits = Int64.to_int32_exn (Int64.shift_right_logical bits 32) in
+    let bottom_bits = Int64.to_int32_exn (Int64.bit_and bits (Int64.shift_right_logical Int64.max_value 32)) in
+    [(Int32.of_int_exn 1); top_bits; bottom_bits]
+  | Ast.Spookystring syntax ->
+    let instruction = [(Int32.of_int_exn 13); (Int32.of_int_exn (String.length syntax))] in
+    let contents = List.map (List.rev (String.to_list_rev syntax)) ~f:(fun char -> Int32.of_int_exn (Char.to_int char)) in
+    List.append instruction contents
+  | Ast.True ->
+    [(Int32.of_int_exn 18)]
+  | Ast.False ->
+    [(Int32.of_int_exn 19)]
+  | Ast.Void -> [(Int32.of_int_exn 14)]
+  | Ast.Array arr ->
+    let length = List.length arr in
+    let array_start = [(Int32.of_int_exn 31); (Int32.of_int_exn length)] in
+    let rec add_key_value_assignments ar index = (
+      match ar with
+      | [] -> []
+      | a :: tl ->
+        let key_val_code = compile_key_value_assignment (Ast.Spookyval(Ast.Numeric(Int.to_float index)), a)  symbol_table in
+        List.append key_val_code (add_key_value_assignments tl (index + 1))
+    ) in
+    let contents = add_key_value_assignments arr 0 in
+    let arr_code = List.append array_start contents in
+    List.append arr_code [(Int32.of_int_exn 9)]
+  | Ast.Object obj ->
+    let obj_decl = [(Int32.of_int_exn 32)] in
+    let rec add_key_value_assignments o =
+      (match o with
+      | [] -> []
+      | a :: tl ->
+        let key, spval = a in
+        let str_key = (Ast.Spookyval(Ast.Spookystring(key))) in
+        List.append (compile_key_value_assignment (str_key, spval) symbol_table)  (add_key_value_assignments tl)
+    ) in
+    let contents = add_key_value_assignments obj in
+    let obj_code = List.append obj_decl contents in
+    List.append obj_code [(Int32.of_int_exn 9)]
+
+and compile_key_value_assignment key_val symbol_table =
+    let key, spval = key_val in
+    let key_opcode = [(Int32.of_int_exn 33)] in
+    let key_expression = List.append (compile_ast symbol_table key) [Int32.of_int_exn 9] in
+    let value_expression = List.append (compile_ast symbol_table spval) [Int32.of_int_exn 9] in
+    let key_val_expr = List.append key_expression value_expression in
+    List.append key_opcode key_val_expr
+
 let compile debug filename =
   let input = open_in filename in
   let filebuf = Lexing.from_channel input in
@@ -214,8 +248,6 @@ let compile debug filename =
     Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA!\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->
     Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg  
-  | BytecodeInterpreter.What_r_u_doing_lol msg ->
-    Printf.eprintf "%s\n%!" msg
   | CompileError msg ->
     Printf.eprintf "%s\n%!" msg
   ;

@@ -74,24 +74,82 @@ and array_literal_definition = {
   assignments: opcode list;
 }
 
-let rec debug_spookyval spval =
+let spooky_to_bool spval =
   match spval with
-    | Numeric n -> print_float n
-    | Spookystring s -> Printf.printf "SPOOKYSTRING: %s" s
-    | Void -> print_string "VOID"
-    | Booolean b -> print_string (if b then "TRUE" else "FALSE")
+  | Numeric n -> not(n =. 0.0)
+  | Spookystring s -> not(String.equal s "")
+  | Void -> false
+  | Booolean b -> b
+  | Array a -> not(Array.is_empty a)
+  | Object o -> true
+
+let rec spooky_to_string spval =
+  match spval with
+  | Numeric n -> string_of_float n
+  | Spookystring s -> s
+  | Void -> "Void"
+  | Booolean b -> if b then "True" else "False"
+  | Array a ->
+    "🍫\n" ^
+    (Array.fold_right a ~init:"" ~f:(fun spval acc -> acc ^ (spooky_to_string spval) ^ "🍬\n")) ^
+    "🍭\n"
+  | Object o ->
+    "🍫\n" ^ Hashtbl.fold o ~init:"" ~f:(
+      fun ~key:k ~data:spval acc ->
+        acc ^ k ^ " 😱 " ^ (spooky_to_string spval) ^ "🍬\n"
+    ) ^ "🍭\n"
+
+let spooky_equality a b =
+  match a, b with
+  | Numeric a, Numeric b -> a =. b
+  | Spookystring a, Spookystring b -> String.equal a b
+  | Void, Void -> true
+  | Booolean a, Booolean b -> phys_equal a b
+  | _, _ -> false
+
+let spooky_greater a b =
+  match a, b with
+  | Numeric a, Numeric b -> a > b
+  | Spookystring a, Spookystring b -> a > b
+  | Void, Void -> false
+  | Booolean a, Booolean b -> false
+  | _, _ -> false
+
+let spooky_less a b =
+  match a, b with
+  | Numeric a, Numeric b -> a < b
+  | Spookystring a, Spookystring b -> a < b
+  | Void, Void -> false
+  | Booolean a, Booolean b -> false
+  | _, _ -> false
+
+let print_spookyval spval =
+  let str_spval = spooky_to_string spval in
+  if IsItScary.its_scary str_spval then (
+    print_string str_spval;
+    print_string " "
+  ) else
+    raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.")
+
+let debug_spookyval spval =
+  match spval with
+    | Numeric n ->
+      print_string "BOOLEAN: ";
+      print_endline (spooky_to_string spval)   
+    | Spookystring s ->
+      print_string "SPOOKYSTRING: ";
+      print_endline (spooky_to_string spval)
+    | Void ->
+      print_endline (spooky_to_string spval)    
+    | Booolean b ->
+      print_string "BOOLEAN: ";
+      print_endline (spooky_to_string spval)      
     | Object o ->
-      print_endline "OBJECT: ";
-      Hashtbl.iteri o ~f:(
-        fun ~key:k ~data:spval ->
-          print_string "Key: ";
-          print_endline k;
-          debug_spookyval spval;
-          print_newline()
-      )
+      print_string "OBJECT: ";
+      print_endline(spooky_to_string spval)
     | Array arr ->
       print_string "ARRAY: ";
-      Array.iter arr ~f:(fun spval -> debug_spookyval spval; print_string " ")
+      print_endline (spooky_to_string spval)
 
 let rec debug_opcodes ops =
   match ops with
@@ -162,54 +220,6 @@ let debug_opcode_object opcode =
     debug_opcodes op.loop_code;
     print_newline()
   | _ -> ()
-
-let print_spookyval spval =
-  match spval with
-  | Spookystring sp ->
-    if IsItScary.its_scary sp then (
-      print_string sp;
-      print_string " "
-    ) else
-      raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
-  | _ -> raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.") 
-
-let spooky_to_bool spval =
-  match spval with
-  | Numeric n -> not(n =. 0.0)
-  | Spookystring s -> not(String.equal s "")
-  | Void -> false
-  | Booolean b -> b
-
-let spooky_to_string spval =
-  match spval with
-  | Numeric n -> string_of_float n
-  | Spookystring s -> s
-  | Void -> "Void"
-  | Booolean b -> if b then "True" else "False"
-
-let spooky_equality a b =
-  match a, b with
-  | Numeric a, Numeric b -> a =. b
-  | Spookystring a, Spookystring b -> String.equal a b
-  | Void, Void -> true
-  | Booolean a, Booolean b -> phys_equal a b
-  | _, _ -> false
-
-let spooky_greater a b =
-  match a, b with
-  | Numeric a, Numeric b -> a > b
-  | Spookystring a, Spookystring b -> a > b
-  | Void, Void -> false
-  | Booolean a, Booolean b -> false
-  | _, _ -> false
-
-let spooky_less a b =
-  match a, b with
-  | Numeric a, Numeric b -> a < b
-  | Spookystring a, Spookystring b -> a < b
-  | Void, Void -> false
-  | Booolean a, Booolean b -> false
-  | _, _ -> false
 
 let apply_unary_op a op =
   match op with

@@ -106,6 +106,7 @@ let rec compile_ast symbol_table syntax =
     | Ast.IfElseStatement syntax -> compile_if_else_statement syntax.test syntax.if_statements syntax.else_statements symbol_table
     | Ast.LoopStatement syntax -> compile_loop_statement syntax.test syntax.statements symbol_table
     | Ast.Accessor syntax -> compile_accessor syntax.store syntax.key symbol_table
+    | Ast.AssignmentStatement syntax -> compile_assignment_statement syntax.id syntax.accessors syntax.value syntax.key symbol_table
     | Ast.Operator syntax -> 
       match syntax with
       | Ast.Multiplication syntax -> List.append
@@ -138,9 +139,11 @@ let rec compile_ast symbol_table syntax =
       | Ast.Lequal syntax ->
         List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
         [ Int32.of_int_exn 24]
-      | Ast.Lequal syntax ->
+      | Ast.Nequal syntax ->
         List.append (List.append (compile_ast symbol_table syntax.a) (compile_ast symbol_table syntax.b))
-        [ Int32.of_int_exn 24]
+        [ Int32.of_int_exn 28]
+      | Ast.Not syntax ->
+        List.append (compile_ast symbol_table syntax.inverted) [ Int32.of_int_exn 29 ]
 
 and compile_statements statements symbol_table=
   List.fold_left statements ~init:([]: int32 list) ~f:(fun acc node -> List.append acc (compile_ast symbol_table node))
@@ -169,6 +172,30 @@ and compile_accessor store_code key_code symbol_table =
   let key = List.append (compile_ast symbol_table key_code) [Int32.of_int_exn 9] in
   let store_key = List.append store key in
   List.append [Int32.of_int_exn 30] store_key
+
+and compile_assignment_statement id accessors value key symbol_table =
+  let symbol_index = match SymbolTable.find_symbol id symbol_table with
+    | None -> raise (CompileError (Printf.sprintf "AHHH! A program with assignment statements that point to undefined variables! Spooky! Please define: %s%!" id))
+    | Some dec -> (
+      match dec with
+      | SymbolTable.GlobalVariableDeclaration var -> var
+      | SymbolTable.VariableDeclaration var -> var
+      | _ -> raise (CompileError (Printf.sprintf "Officer please help! Someone's trying to compile a program with and assignment statement that points to non-variable identifier %s! Send help!%!" id))
+    ) in
+  let assign_to = [(Int32.of_int_exn 34); (Int32.of_int_exn symbol_index)] in
+  let accessor_code =
+    List.fold_left accessors ~init:([]: int32 list) ~f:(
+      fun acc node ->
+        let assignment_accessor_opcode = [Int32.of_int_exn 35] in
+        let accessor_code = List.append (compile_ast symbol_table node) [Int32.of_int_exn 9] in
+        let accessor_stmt = List.append assignment_accessor_opcode accessor_code in
+        List.append acc accessor_stmt
+    ) in
+  let key_code = List.append (compile_ast symbol_table key) [Int32.of_int_exn 9] in
+  let value_code = List.append (compile_ast symbol_table value) [Int32.of_int_exn 9] in
+  let key_val = List.append key_code value_code in
+  let code = List.append accessor_code key_val in
+  List.append assign_to code
 
 and push_spookyval spookyval symbol_table =
   match spookyval with
@@ -247,7 +274,8 @@ let compile debug filename =
   | Parser.Error ->
     Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA!\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->
-    Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg  
+    Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg
+  (* left out bytecode interpreter errors for debugging *)
   | CompileError msg ->
     Printf.eprintf "%s\n%!" msg
   ;

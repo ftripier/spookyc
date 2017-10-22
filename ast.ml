@@ -23,6 +23,7 @@ type node =
   | LoopStatement of { test: node; statements: node list }
   | Statement of { children: node list; }
   | Accessor of { store: node; key: node }
+  | AssignmentStatement of { id: string; accessors: node list; key: node; value: node }
   | Operator of operator
 and operator = 
   | Multiplication of { children: node list; }
@@ -82,6 +83,7 @@ let rec serialize_node (n: node) =
     | IfElseStatement n -> "IfElseStatement!"
     | LoopStatement n -> "WhileStatement!"
     | Accessor n -> "Accessor!";
+    | AssignmentStatement n -> "AssignmentStatement!";
     | Operator n -> serialize_operator n
 
 and serialize_spookyval n =
@@ -140,7 +142,7 @@ let rec print_ast ?level:(l=0) (syntax:node) =
     print_string (print_level l);    
     print_endline "If statements:";
     List.iter ~f:(print_ast ~level:(l + 1)) syntax.if_statements;
-    print_string (print_level l);    
+    print_string (print_level l);   
     print_endline "Else statements:";
     List.iter ~f:(print_ast ~level:(l + 1)) syntax.else_statements
   | LoopStatement syntax ->
@@ -152,12 +154,22 @@ let rec print_ast ?level:(l=0) (syntax:node) =
     List.iter ~f:(print_ast ~level:(l + 1)) syntax.statements
   | Statement syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children
   | Accessor syntax ->
-    print_string (print_level l);  
+    print_string (print_level (l + 1));  
     print_endline "Store:";
-    print_ast ~level:(l + 1) syntax.store;
-    print_string (print_level l);    
+    print_ast ~level:(l + 2) syntax.store;
+    print_string (print_level (l + 1));    
     print_endline "Key:";
-    print_ast ~level:(l + 1) syntax.key;    
+    print_ast ~level:(l + 2) syntax.key;
+  | AssignmentStatement syntax ->
+    print_string (print_level (l + 1));   
+    print_endline "Accessors:";
+    List.iter ~f:(print_ast ~level:(l + 2)) syntax.accessors;
+    print_string (print_level (l + 1)); 
+    print_endline "Key:";
+    print_ast ~level:(l+ 2) syntax.key;
+    print_string (print_level (l + 1));    
+    print_endline "Value:";
+    print_ast ~level:(l+ 2) syntax.value
   | Operator syntax -> 
     match syntax with
     | Multiplication syntax -> List.iter ~f:(print_ast ~level:(l + 1)) syntax.children 

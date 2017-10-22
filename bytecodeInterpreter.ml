@@ -44,6 +44,8 @@ type opcode =
   | ArrayLiteralDefinition of array_literal_definition
   | ObjectLiteralDefinition of opcode list
   | Assignment of key_val
+  | AssignmentStatement of assignment_statement
+  | AssignmentAccessor of opcode list
   | Return
 and function_declaration = {
   symbol: int;
@@ -72,6 +74,12 @@ and key_val = (opcode list * opcode list)
 and array_literal_definition = {
   length: int;
   assignments: opcode list;
+}
+and assignment_statement = {
+  id: int;
+  accessors: opcode list;
+  key: opcode list;
+  value: opcode list;
 }
 
 let spooky_to_bool spval =
@@ -207,7 +215,15 @@ let rec debug_opcodes ops =
     | Assignment a ->
       print_endline "ASSIGNMENT";
       debug_opcodes tl
-    | _ -> debug_opcodes tl
+    | AssignmentStatement _ ->
+      print_endline "ASSIGNMENT_STATEMENT: ";
+      debug_opcodes tl
+    | AssignmentAccessor ass_acc (* ha ha ha ha ha *) ->
+      print_endline "ASSIGNMENT_ACCESSOR: ";
+      debug_opcodes tl
+    | _ ->
+      print_endline "WEEEE!";
+      debug_opcodes tl
   )
 
 let debug_opcode_object opcode =
@@ -219,7 +235,7 @@ let debug_opcode_object opcode =
     print_endline "LOOP_CODE: ";
     debug_opcodes op.loop_code;
     print_newline()
-  | _ -> ()
+  | op_obj -> debug_opcodes [op_obj]
 
 let apply_unary_op a op =
   match op with
@@ -386,6 +402,8 @@ class virtual_machine = object(self)
   method assign_to_context key spval =
     if debug then (
       print_endline "ASSIGNING TO CONTEXT!";
+      print_string "CONTEXT: ";
+      debug_spookyval context;
       print_string "KEY: ";
       debug_spookyval key;
       print_newline();
@@ -419,6 +437,38 @@ class virtual_machine = object(self)
       ) in
     pop (num_args - 1);
     registers <- arguments
+
+  method access_context key = (
+    if debug then (
+      print_endline "ACCESSING CONTEXT!";
+      print_string "CONTEXT: ";
+      debug_spookyval context;
+      print_newline();
+      print_string "KEY: ";
+      debug_spookyval key;
+      print_newline()
+    );
+    match context with
+    | Spookystring sp ->
+      (match key with
+      | Numeric n ->
+        let index = Int.of_float n in
+        let cr = String.get sp index in
+        Spookystring(String.of_char cr)
+      | _ -> Void)
+    | Array arr ->
+      (match key with
+      | Numeric n ->
+        let index = Int.of_float n in
+        Array.get arr index
+      | _ -> Void)
+    | Object obj ->
+      let str_key = spooky_to_string key in
+      (match Hashtbl.find obj str_key with
+      | Some spval -> spval
+      | None -> Void)
+    | _ -> Void
+  )
   
   method try_loop (loop_statement:loop_definition) =
     if debug then (
@@ -513,35 +563,12 @@ class virtual_machine = object(self)
         Stream.junk opcodes;
         self#interpret_opcodes (Stream.of_list accessor.store_code);
         self#test_op_stack (fun store ->
-          op_stack <- (
-            self#interpret_opcodes (Stream.of_list accessor.key_code);            
-            match store with
-            | Spookystring sp ->
-              let key = self#get_op_top in (
-                match key with
-                | Numeric n ->
-                  let index = Int.of_float n in
-                  let cr = String.get sp index in
-                  Spookystring(String.of_char cr)
-                | _ -> Void
-              )
-            | Array arr ->
-              let key = self#get_op_top in (
-                match key with
-                | Numeric n ->
-                  let index = Int.of_float n in
-                  Array.get arr index
-                | _ -> Void
-              )
-            | Object obj ->
-              let key = self#get_op_top in (
-                let str_key = spooky_to_string key in
-                match Hashtbl.find obj str_key with
-                | Some spval -> spval
-                | None -> Void
-              )
-            | _ -> Void
-          ) :: op_stack
+          let old_context = context in
+          self#set_context store;
+          self#interpret_opcodes (Stream.of_list accessor.key_code);
+          let key = self#get_op_top in
+          op_stack <- (self#access_context key) :: op_stack;
+          self#set_context old_context
         );
         self#interpret_opcodes opcodes
       | IfDefinition if_statement ->
@@ -587,6 +614,7 @@ class virtual_machine = object(self)
         self#set_context old_context;
         self#interpret_opcodes opcodes        
       | ObjectLiteralDefinition object_literal_definition ->
+        Stream.junk opcodes;      
         let obj = Object(String.Table.create()) in
         let old_context = context in        
         self#set_context obj;
@@ -600,12 +628,31 @@ class virtual_machine = object(self)
         let key = self#eval key_expr in
         let spval = self#eval val_expr in
         self#assign_to_context key spval;
+        self#interpret_opcodes opcodes   
+      | AssignmentStatement assign_statement ->
+        Stream.junk opcodes;
+        let base_id = assign_statement.id in
+        let base_obj = (Array.get registers base_id) in
+        self#set_context base_obj;
+        self#interpret_opcodes (Stream.of_list assign_statement.accessors);
+        self#interpret_opcodes (Stream.of_list assign_statement.key);
+        let key = self#get_op_top in
+        self#interpret_opcodes (Stream.of_list assign_statement.value);
+        let spval = self#get_op_top in
+        self#assign_to_context key spval;
+        self#interpret_opcodes opcodes    
+      | AssignmentAccessor ass_acc (* lmaoooo *) ->
+        Stream.junk opcodes;      
+        self#interpret_opcodes (Stream.of_list ass_acc);
+        let key = self#get_op_top in
+        let new_obj = self#access_context key in 
+        self#set_context new_obj;
         self#interpret_opcodes opcodes        
       | FunctionCall op ->
         Stream.junk opcodes;      
         let called = Hashtbl.find functions op in
         (match called with
-        | None -> raise (What_r_u_doing_lol "Can't call a function before you define it. This should've been caught in the parser, which actually does scare me. Please tweet me at @FelixTripier if you see this. Thank you!")
+        | None -> raise (What_r_u_doing_lol "Eeeeee a program that called a function before it defined it! Guess I'm fear-crashing!")
         | Some called ->
           let old_registers = registers in
           registers <- Array.create ~len:0 Void;
@@ -620,7 +667,7 @@ class virtual_machine = object(self)
           | 0 -> self#print_and_then_scream
           | 1 -> self#spooky_input
           | 2 -> self#scary_length
-          | _ -> raise (What_r_u_doing_lol "NnnNOOOO an ALIEN BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
+          | _ -> raise (What_r_u_doing_lol "NnnNOOOO a MYSTERIOUS BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
         );
         self#interpret_opcodes opcodes
 end
@@ -665,10 +712,21 @@ let rec buffer_assignments ?b:(buffered=[]) ops =
   match Stream.peek ops with
   | None -> List.rev buffered
   | Some a ->
-    Stream.junk ops;
     match a with
-    | Assignment kv -> buffer_assignments ~b:(a :: buffered) ops
-    | _ -> buffer_assignments ~b:buffered ops
+    | Assignment kv ->
+      Stream.junk ops;
+      buffer_assignments ~b:(a :: buffered) ops
+    | _ -> List.rev buffered
+
+let rec buffer_assignment_accessors ?b:(buffered=[]) ops =
+  match Stream.peek ops with
+  | None -> List.rev buffered
+  | Some a ->
+    match a with
+    | AssignmentAccessor ass_acc (* lol *) ->
+      Stream.junk ops;
+      buffer_assignment_accessors ~b:(a :: buffered) ops
+    | _ -> List.rev buffered
 
 let rec opcodes ?d:(debug=false) bytes =
   let next_opcode i =
@@ -777,6 +835,23 @@ let rec opcodes ?d:(debug=false) bytes =
           let key = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in
           let spvalue = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in
           Some (Assignment (key, spvalue))
+        | 34 ->
+          Stream.junk bytes;
+          let id = Int32.to_int_exn (consume_operand bytes) in
+          let opcode_stream = opcodes ~d:debug bytes in
+          let accessors = optimize_ops (buffer_assignment_accessors opcode_stream) in
+          let key = optimize_ops (buffer_opcodes opcode_stream) in       
+          let value = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in
+          Some (AssignmentStatement {
+            id;
+            accessors;
+            key;
+            value;
+          })
+        | 35 ->
+          Stream.junk bytes;
+          let accessor_ops = optimize_ops (buffer_opcodes (opcodes ~d:debug bytes)) in      
+          Some (AssignmentAccessor accessor_ops)
         | op -> raise (What_r_u_doing_lol (Printf.sprintf "An alien opcode from outer space: %i .We ran away from the execution of your program in fear!%!" op))
     )
   in Stream.from(next_opcode)

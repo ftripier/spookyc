@@ -30,6 +30,7 @@
 %{
 
   open Ast
+  open Core
 
 %}
 %%
@@ -61,11 +62,19 @@ statement:
 | stmt = void_expr { stmt }
 | stmt = conditional { stmt }
 | stmt = loop { stmt }
+| stmt = assignment_statement { stmt }
 
 variable_declaration: VAR_DEC id = ID SEMICOLON { Ast.VariableDeclaration { id; children=[]; } }
 variable_assignment: id = ID ASSIGN e = expr SEMICOLON { Ast.VariableAssignment { id; children = [e]; } }
 return_statement: RETURN ret = expr SEMICOLON { Ast.ReturnStatement { children = [ret]; } }
 void_expr: e = expr SEMICOLON { Ast.Expression { children = [e]; } }
+assignment_statement:
+| id = ID access_exprs = accessor_list value = expr SEMICOLON {
+    let correct_order = List.rev access_exprs in
+    let key = List.hd_exn correct_order in
+    let accessors = List.tl_exn correct_order in
+    Ast.AssignmentStatement {id; accessors; key; value}
+}
 
 loop: LOOP LPAREN e = expr RPAREN LBRACE statements = statementseq
     { Ast.LoopStatement {test = e; statements; } }
@@ -75,6 +84,10 @@ conditional:
     { Ast.IfStatement { test = e; statements; } }
 | IF LPAREN e = expr RPAREN LBRACE if_statements = statementseq ELSE LBRACE else_statements = statementseq
     { Ast.IfElseStatement { test = e; if_statements; else_statements; } }
+
+accessor_list:
+| START_ACCESSOR e = expr END_ACCESSOR ASSIGN { [e] }
+| START_ACCESSOR e = expr END_ACCESSOR al = accessor_list { e :: al }
 
 parameter_list:
 | RPAREN { [] }

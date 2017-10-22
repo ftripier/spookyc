@@ -137,7 +137,7 @@ let print_spookyval spval =
     print_string str_spval;
     print_string " "
   ) else
-    raise (What_r_u_doing_lol "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n You tried to scream something that wasn't scary! We crashed your program. That's just how the meme works.")
+    raise (What_r_u_doing_lol (Printf.sprintf "Our language's entire raison d'etre is based around being spooky. In the 'spirit' of that, we only allow scary IO.\n Make this scary and then we'll talk: %s%!" str_spval))
 
 let debug_spookyval spval =
   match spval with
@@ -343,6 +343,14 @@ class virtual_machine = object(self)
     match top with
     | Spookystring sp -> Numeric(Int.to_float (String.length sp))
     | Array arr -> Numeric(Int.to_float (Array.length arr))
+    | _ -> Void
+    ) :: op_stack
+  
+  method skeleton_keys =
+    let top = self#get_op_top in
+    op_stack <- (
+    match top with
+    | Object o -> Array ( Array.of_list (List.map (Hashtbl.keys o) ~f:(fun a -> Spookystring a)))
     | _ -> Void
     ) :: op_stack
 
@@ -667,6 +675,7 @@ class virtual_machine = object(self)
           | 0 -> self#print_and_then_scream
           | 1 -> self#spooky_input
           | 2 -> self#scary_length
+          | 3 -> self#skeleton_keys
           | _ -> raise (What_r_u_doing_lol "NnnNOOOO a MYSTERIOUS BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
         );
         self#interpret_opcodes opcodes

@@ -21,6 +21,7 @@ let call_builtin function_name =
   | "print_and_then_scream" -> [Int32.of_int_exn 15; Int32.of_int_exn 0]
   | "spooky_input" -> [Int32.of_int_exn 15; Int32.of_int_exn 1]
   | "scary_length" -> [Int32.of_int_exn 15; Int32.of_int_exn 2]
+  | "skeleton_keys" -> [Int32.of_int_exn 15; Int32.of_int_exn 3]
   | _ -> raise (CompileError "Ahhhh! That variable you thought existed actually didn't.")
 
 let rec print_ops ops =
@@ -275,7 +276,8 @@ let compile debug filename =
     Printf.eprintf "%s AAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AA!\n%!" (Scarerrors.position filebuf)
   | SymbolTable.Error msg ->
     Printf.eprintf "%s %s\n%!" (Scarerrors.position filebuf) msg
-  (* left out bytecode interpreter errors for debugging *)
+  | BytecodeInterpreter.What_r_u_doing_lol msg ->
+    Printf.eprintf "%s\n%!" msg
   | CompileError msg ->
     Printf.eprintf "%s\n%!" msg
   ;

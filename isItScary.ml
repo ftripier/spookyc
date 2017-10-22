@@ -45,6 +45,8 @@ let spooky_words = create_spooky_words_regex [
   "jack([_])?o([_])?lantern";
   "bone";
   "brain";
+  "haunted";
+  "gut";
 ]
 
 let not_scary_words = create_spooky_words_regex (* these words arent spooky, but code reuse *) [

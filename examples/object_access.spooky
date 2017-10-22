@@ -1,6 +1,8 @@
 👻 print_structured_wolf_object 👿 creepy_object 😈 💀
+  🤡 scream_salt🎃
+  scream_salt 😱 " eeeee!"🎃
   print_and_then_scream👿 creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️😈🎃
-  creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️ 😱 "scary!" + " eeeeeee!"🎃
+  creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️ 😱 "scary!" + scream_salt🎃
   print_and_then_scream👿 creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️😈🎃
   creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️ 😱 "skeletons!"🎃
   print_and_then_scream👿 creepy_object🗡️"top_level"🕯️🗡️"scary_key"🕯️😈🎃

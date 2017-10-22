@@ -1,0 +1,36 @@
+👻 print_scary_list_at_index 👿 scary_list 🕸️ boo_index 😈 💀
+  print_and_then_scream👿  boo_index + " : " + scary_list🗡️ boo_index 🕯️  + " brains" 😈🎃
+  🍬 ⚰️🎃
+☠️
+
+👻 print_scary_list 👿 scary_list 😈 💀
+  print_scary_list_at_index👿 scary_list 🕸️ 0😈🎃
+  print_scary_list_at_index👿 scary_list 🕸️ 1😈🎃
+  print_scary_list_at_index👿 scary_list 🕸️ 2😈🎃 
+
+  scary_list🗡️0🕯️ 😱 13🎃
+  print_scary_list_at_index👿 scary_list 🕸️ 0😈🎃
+
+  scary_list🗡️0🕯️ 😱 "ghouls" 🎃
+  print_scary_list_at_index👿 scary_list 🕸️ 0😈🎃
+
+  scary_list🗡️0🕯️ 😱 🍫
+    🌚🍬
+    🌚🍬
+    🌚🍬
+  🍭🎃
+  print_scary_list_at_index👿 scary_list 🕸️ 0😈🎃
+☠️
+
+
+👻 boo! 👿  😈 💀
+  🤡 scary_list🎃
+  scary_list 😱 🍫
+    1.4🍬
+    "yeee yeee yeeeeeeee skeletons"🍬
+    "ghosts spiders"🍬
+    🌚
+  🍭🎃
+  print_scary_list👿 scary_list 😈🎃
+  🍬 ⚰️🎃
+☠️

@@ -1,3 +1,3 @@
-#The Spooky Programming Language
+# The Spooky Programming Language
 
 👻

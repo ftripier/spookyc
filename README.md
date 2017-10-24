@@ -43,7 +43,7 @@ The problem of binary categorization of arbitrary input is well known to the art
 
 In a good program, variable names must be terse, but expressive.
 
-In Spookylang they must also be scary.
+In Spookylang they must also be scary, or your program will crash.
 
 ## The spookiest emojis 😱
 

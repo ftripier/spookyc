@@ -10,13 +10,13 @@ h1 {
   font-family: 'Creepster', cursive;
 }
 
-.fork a {
+#header nav .fork a {
   background-color: $halloween-orange;
   font-family: 'Creepster', cursive;  
   border: 1px solid darken($halloween-orange, 5%);
 }
 
-.fork a:hover {
+#header nav .fork a:hover {
   background-color: darken($halloween-orange, 10%);
   border: 1px solid darken($halloween-orange, 15%);
 }

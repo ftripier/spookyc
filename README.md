@@ -20,7 +20,7 @@ In order to write Spookylang, our primary researcher first had to truly understa
 
 ## Spooky-Completeness 😈
 
-Simply put, Spookylang is a machine that can be programmed to execute any computable functions that take "scary" input and output "spooky" output. This property (henceforth referred to as Spooky completeness) is isomorphic to Turing completeness by way of the following reversible morphisms:
+Simply put, Spookylang is a procedural, mostly dynamically typed machine that can be programmed to execute any computable functions that take "scary" input and output "spooky" output. This property (henceforth referred to as Spooky completeness) is isomorphic to Turing completeness by way of the following reversible morphisms:
 
 ```
 let n be any string 

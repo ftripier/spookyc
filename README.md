@@ -6,4 +6,8 @@ Among these computations determined too onerous for more affable turing machines
 
 But there is one clade of computational semantics that remains too labyrinthine, too daring for the eye of even our most maverick programming language academics: writing spooky programs.
 
-Until now. Introducing: 🎃 The Spooky Programming Language 🎃
+Until now.
+
+Introducing:
+
+_🎃 The Spooky Programming Language 🎃_

@@ -16,7 +16,7 @@ _🎃 The Spooky Programming Language 🎃_
 
 Spookylang stands behind but one goal: to be the scariest programming language. Yes, I know, "What about Java 7?" as you wheel around to high-five your coworker. Enough merriment.
 
-In order to write Spookylang, our primary researcher first had to truly understand the meaning of fear. Failing to do that, our researcher proposed these language features:
+In order to write Spookylang, our primary researcher first had to truly understand the meaning of fear. Failing to do that, our researcher instead proposed these language features:
 
 ## Spooky-Completeness 😈
 

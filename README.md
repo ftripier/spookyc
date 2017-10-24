@@ -18,6 +18,8 @@ Spookylang stands behind but one goal: to be the scariest programming language. 
 
 In order to write Spookylang, our primary researcher first had to truly understand the meaning of fear. Failing to do that, our researcher instead proposed these language features:
 
+
+
 ## Spooky-Completeness 😈
 
 Simply put, Spookylang is a procedural, mostly dynamically typed machine that can be programmed to execute any computable functions that take "scary" input and output "spooky" output. This property (henceforth referred to as Spooky completeness) is isomorphic to Turing completeness by way of the following reversible morphisms:
@@ -33,17 +35,23 @@ N + 🎃 -> 🤡
 
 To enforce this invariant, the Spookylang interpreter provides I/O routines that crash upon being passed "non-scary" strings.
 
+
+
 ## Determining scariness of strings 💀
 
 The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI list of regular expressions" that clusters strings according to the following policy:
 
 ![Artifical Intelligence Hardcoded List of Regexs](https://i.imgur.com/Jde71bT.png "SVM - Support Very Mhardcoded lists of regexs)")
 
-## It is not enough that our strings be scary, so too must our variables 👹
+
+
+## Vari(scary)ables 👹
 
 In a good program, variable names must be terse, but expressive.
 
 In Spookylang they must also be scary, or your program won't compile.
+
+
 
 ## The spookiest emojis 😱
 
@@ -55,6 +63,10 @@ There's nothing less scary than a keyword.
 
 
 
+## Jump Scares
 
+Surprise is a key element of being scared.
+
+It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Much like kindred spooker MongoDB, the spookylang runtime will unpredictably produce... shall we say, _unexpected_ results...
 
 

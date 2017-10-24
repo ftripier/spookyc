@@ -10,8 +10,13 @@ h1 {
   font-family: 'Creepster', cursive;
 }
 
-.fork {
+.fork a {
   background: $halloween-orange;
   font-family: 'Creepster', cursive;  
-  border: 0;
+  border: 1px solid darken($halloween-orange, 5%);
+}
+
+.fork a:hover {
+  background: darken($halloween-orange, 10%);
+  border: 1px solid darken($halloween-orange, 15%);
 }

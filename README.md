@@ -37,7 +37,7 @@ To enforce this invariant, the Spookylang interpreter provides I/O routines that
 
 
 
-## Determining scariness of strings 💀
+## Determining Scariness of Strings 💀
 
 The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI list of regular expressions" that clusters strings according to the following policy:
 
@@ -53,7 +53,7 @@ In Spookylang they must also be scary, or your program won't compile.
 
 
 
-## The spookiest emojis 😱
+## The Spookiest Emojis 😱
 
 There's nothing less scary than a keyword.
 

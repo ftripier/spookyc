@@ -37,7 +37,7 @@ To enforce this invariant, the Spookylang interpreter provides I/O routines that
 
 The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI list of regular expressions" that clusters strings according to the following policy:
 
-![Artifical Intelligence Hardcoded List of Regexs](https://i.imgur.com/Jde71bT.png "SVG - Support Very Mhardcoded lists of regexs)")
+![Artifical Intelligence Hardcoded List of Regexs](https://i.imgur.com/Jde71bT.png "SVM - Support Very Mhardcoded lists of regexs)")
 
 ## It is not enough that our strings be scary, so too must our variables 👹
 

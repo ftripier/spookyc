@@ -51,7 +51,7 @@ There's nothing less scary than a keyword.
 
 .. Except in Spookylang where all keywords are spooky emojis!
 
-![Screenshot of some honestly pretty scary emojis](https://www.dropbox.com/s/cunxpmywost304v/Screenshot%202017-10-23%2021.51.35.png "boo!")
+![Screenshot of some honestly pretty scary emojis](https://i.imgur.com/Ne7LEl6.png "boo!")
 
 
 

@@ -2,3 +2,16 @@
 ---
 
 @import "{{ site.theme }}";
+@import url('https://fonts.googleapis.com/css?family=Creepster');
+
+$halloween-orange: #f95001;
+
+h1 {
+  font-family: 'Creepster', cursive;
+}
+
+.fork {
+  background: $halloween-orange;
+  font-family: 'Creepster', cursive;  
+  border: 0;
+}

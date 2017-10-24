@@ -63,7 +63,7 @@ There's nothing less scary than a keyword.
 
 
 
-## Jump Scares
+## Jump Scares 🤡
 
 Surprise is a key element of being scared.
 

@@ -2,6 +2,6 @@
 
 if ! docker images | grep -q spookybox
 then
-  docker build . --tag spookybox > /dev/null
+  docker build . --tag spookybox
 fi
 docker run --rm -v `pwd`:/source spookybox "/source/${1}"

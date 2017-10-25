@@ -41,7 +41,7 @@ To enforce this invariant, the Spookylang compiler provides I/O routines that cr
 
 ### Determining Scariness of Strings 💀
 
-The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI list of regular expressions" that clusters strings according to the following policy:
+The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI hardcoded list of regular expressions" that clusters strings according to the following policy:
 
 ![Artifical Intelligence Hardcoded List of Regexs](https://i.imgur.com/Jde71bT.png "SVM - Support Very Mhardcoded lists of regexs)")
 

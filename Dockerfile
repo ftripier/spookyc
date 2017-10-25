@@ -6,3 +6,6 @@ RUN opam init
 RUN opam switch 4.03.0
 RUN eval `opam config env`
 RUN opam install core re2 menhir
+RUN opam config env >> ~/.profile
+RUN opam config env >> ~/.bashrc
+WORKDIR /source

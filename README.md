@@ -12,7 +12,15 @@ Introducing:
 
 _🎃 The Spooky Programming Language 🎃_
 
-![Screenshot of some honestly pretty scary emojis](https://i.imgur.com/Ne7LEl6.png "boo!")
+```
+👻 boo! 👿  😈 💀
+  🤡 spooky_list🎃
+  spooky_list 😱 🍫 1 🍬 2.5 🍬 "uh oh skeletons" 🍬 🌝 🍬 🌚 🍬 ⚰️ 🍭🎃
+  print_and_then_scream👿 spooky_list 😈🎃
+  🍬 ⚰️🎃
+☠️
+
+```
 
 # The Programming Language of Fear 🌚
 

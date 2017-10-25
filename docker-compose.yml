@@ -1,7 +1,6 @@
 version: '3'
 services:
-  build-compiler:
+  spooky-compiler:
     build: .
     volumes:
      - .:/source
-    command: /source/build.sh

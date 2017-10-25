@@ -55,7 +55,7 @@ In Spookylang they must also be scary, or your program won't compile.
 
 
 
-## The Spookiest Emojis 😱
+### The Spookiest Emojis 😱
 
 There's nothing less scary than a keyword.
 
@@ -67,7 +67,7 @@ There's nothing less scary than a keyword.
 
 Surprise is a key element of being scared.
 
-It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Not unlike MongoDB, the spookylang runtime will unpredictably produce terrifying output.
+It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Not unlike MongoDB, the spookylang runtime will occasionally and unpredictably produce terrifying output.
 
 
 # Building It 🍬
@@ -77,5 +77,8 @@ The Spookylang compiler is written in WOAH!Caml, a dialect of OCaml wherein the 
 1. Sweaty
 2. Relatively new to OCaml
 3. Screaming
+4. Veiny
 
-In order to protect our practitioners from the rank OCaml amateurity of our researchers (over 200 compiler warnings. Sorry Jane Street!) we've provided a docker-based workflow. Simply run `docker-compose up` in the repo directory and you should find a scary binary by the name of `spooky.native`. Steel yourself for the overwhelming senselessness of fear and run `./spooky.native examples/hell_world.spooky` to test it out.
+In order to protect our practitioners from the rank OCaml-building amateurity of our researchers we've provided a docker-based workflow. Provided you have a relatively modern version of docker installed, you may brace yourself against the overwhelming senselessness of fear and run `./docker-compile.sh examples/hell_world.spooky` to test out an example (the first time will run a bit slow due to building the docker image and the aforementioned OCaml-building amateurism - over 200 compiler warnings, sorry Jane Street!).
+
+`docker-compile.sh` will build and persist a docker image dubbed `spookybox` (don't go in there!), and can be run on any spooky file you desire. This very repo helpfully contains a decent amount of source files in the `examples` subdirectory.

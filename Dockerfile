@@ -8,4 +8,9 @@ RUN eval `opam config env`
 RUN opam install core re2 menhir
 RUN opam config env >> ~/.profile
 RUN opam config env >> ~/.bashrc
-WORKDIR /source
+COPY ./compiler /compiler
+COPY ./build.sh /compiler
+WORKDIR /compiler
+RUN /compiler/build.sh
+RUN ln -s /compiler/_build/spooky.native /usr/local/bin/compile
+ENTRYPOINT [ "compile" ]

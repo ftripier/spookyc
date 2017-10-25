@@ -1,0 +1,7 @@
+version: '3'
+services:
+  build-compiler:
+    build: .
+    volumes:
+     - .:/source
+    command: /source/build.sh

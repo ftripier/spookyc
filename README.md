@@ -12,6 +12,8 @@ Introducing:
 
 _🎃 The Spooky Programming Language 🎃_
 
+![Screenshot of some honestly pretty scary emojis](https://i.imgur.com/Ne7LEl6.png "boo!")
+
 # The Programming Language of Fear 🌚
 
 Spookylang stands behind but one goal: to be the scariest programming language. Yes, I know, "What about Java 7?!" as you wheel around to high-five your coworker. Enough merriment.
@@ -20,7 +22,7 @@ In order to write Spookylang, our primary researcher first had to truly understa
 
 
 
-## Spooky-Completeness 😈
+### Spooky-Completeness 😈
 
 Simply put, Spookylang is a procedural, mostly dynamically typed machine that can be programmed to execute any computable functions that take "scary" input and output "spooky" output. This property (henceforth referred to as Spooky completeness) is isomorphic to Turing completeness by way of the following reversible morphisms:
 
@@ -33,11 +35,11 @@ N + 🎃 -> 🤡
 🤡 - 🎃 -> N
 ```
 
-To enforce this invariant, the Spookylang interpreter provides I/O routines that crash upon being passed "non-scary" strings.
+To enforce this invariant, the Spookylang compiler provides I/O routines that crash upon being passed "non-scary" strings.
 
 
 
-## Determining Scariness of Strings 💀
+### Determining Scariness of Strings 💀
 
 The problem of binary categorization of arbitrary input is well known to the artificial intelligence community. For our own purposes, we employed an "AI list of regular expressions" that clusters strings according to the following policy:
 
@@ -45,7 +47,7 @@ The problem of binary categorization of arbitrary input is well known to the art
 
 
 
-## Vari(scary)ables 👹
+### Vari(scary)ables 👹
 
 In a good program, variable names must be terse, but expressive.
 
@@ -59,14 +61,21 @@ There's nothing less scary than a keyword.
 
 .. Except in Spookylang where all keywords are spooky emojis!
 
-![Screenshot of some honestly pretty scary emojis](https://i.imgur.com/Ne7LEl6.png "boo!")
 
 
-
-## Jump Scares 🤡
+### Jump Scares 🤡
 
 Surprise is a key element of being scared.
 
-It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Much like kindred spooker MongoDB, the spookylang runtime will unpredictably produce... shall we say, _unexpected_ results...
+It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Not unlike MongoDB, the spookylang runtime will unpredictably produce terrifying output.
 
 
+# Building It 🍬
+
+The Spookylang compiler is written in WOAH!Caml, a dialect of OCaml wherein the programmer must be
+
+1. Sweaty
+2. Relatively new to OCaml
+3. Screaming
+
+In order to protect our practitioners from the rank OCaml amateurity of our researchers (over 200 compiler warnings. Sorry Jane Street!) we've provided a docker-based workflow. Simply run `docker-compose up` in the repo directory and you should find a scary binary by the name of `spooky.native`. Steel yourself for the overwhelming senselessness of fear and run `./spooky.native examples/hell_world.spooky` to test it out.

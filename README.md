@@ -77,7 +77,6 @@ The Spookylang compiler is written in WOAH!Caml, a dialect of OCaml wherein the 
 1. Sweaty
 2. Relatively new to OCaml
 3. Screaming
-4. Veiny
 
 In order to protect our practitioners from the rank OCaml-building amateurity of our researchers we've provided a docker-based workflow. Provided you have a relatively modern version of docker installed, you may brace yourself against the overwhelming senselessness of fear and run `./docker-compile.sh examples/hell_world.spooky` to test out an example (the first time will run a bit slow due to building the docker image and the aforementioned OCaml-building amateurism - over 200 compiler warnings, sorry Jane Street!).
 

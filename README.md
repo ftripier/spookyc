@@ -96,3 +96,8 @@ In order to protect our practitioners from the rank OCaml-building amateurity of
 but is nonetheless included [here](docs/reference.md).
 
 The world's scariest examples can be found in the examples directory.
+
+
+# Test your mettle
+
+Finally, something that isn't scary; we have tests! Run them with `docker-compose up`.

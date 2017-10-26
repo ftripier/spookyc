@@ -250,7 +250,8 @@ let apply_binary_op a b op =
   match op with
   | Add ->
     (match a, b with
-    | Numeric a, Numeric b -> Numeric(a +. b)
+    | Numeric anum, Numeric bnum ->
+      Numeric(anum +. bnum)
     | _, Spookystring bsp -> Spookystring (spooky_to_string a ^ bsp)
     | Spookystring bsp, _ -> Spookystring (bsp ^ spooky_to_string b)
     | spval, Array arr -> (
@@ -279,7 +280,7 @@ let apply_binary_op a b op =
   | Equal -> Booolean(spooky_equality a b)
   | Greater -> Booolean(spooky_greater a b)
   | Less -> Booolean(spooky_less a b)
-  | Lequal -> Booolean(spooky_greater a b)
+  | Lequal -> Booolean(not (spooky_greater a b))
   | Gequal -> Booolean(not (spooky_less a b))
   | Nequal -> Booolean(not (spooky_equality a b))
 
@@ -318,6 +319,7 @@ class virtual_machine = object(self)
   val mutable op_stack = ([] : spookyval list)
   val mutable debug = false
   val mutable context = Void
+  val mutable returning = false
 
   method enable_debug =
     debug <- true
@@ -518,6 +520,9 @@ class virtual_machine = object(self)
     | None, [] -> ()
     | None, result :: tl -> ()
     | Some op, _ ->
+      if returning then (
+        ()
+      ) else (
       match op with
       | BinaryOperation op ->
         Stream.junk opcodes;
@@ -559,6 +564,7 @@ class virtual_machine = object(self)
         )
       | Return ->       
         Stream.junk opcodes;
+        returning <- true;
         (match op_stack with
           | [] -> op_stack <- [Void]
           | _ -> ()
@@ -657,7 +663,7 @@ class virtual_machine = object(self)
         self#set_context new_obj;
         self#interpret_opcodes opcodes        
       | FunctionCall op ->
-        Stream.junk opcodes;      
+        Stream.junk opcodes;
         let called = Hashtbl.find functions op in
         (match called with
         | None -> raise (What_r_u_doing_lol "Eeeeee a program that called a function before it defined it! Guess I'm fear-crashing!")
@@ -667,6 +673,7 @@ class virtual_machine = object(self)
           self#push_arguments called.num_parameters called.num_locals;
           self#interpret_opcodes (Stream.of_list called.op_codes);
           registers <- old_registers;
+          returning <- false;
           self#interpret_opcodes opcodes      
         )
       | CallBuiltin op ->
@@ -679,6 +686,7 @@ class virtual_machine = object(self)
           | _ -> raise (What_r_u_doing_lol "NnnNOOOO a MYSTERIOUS BUILTIN! What's it from? What does it do? Too late I already peed my pants.")
         );
         self#interpret_opcodes opcodes
+    )
 end
 
 let int32_to_char i =

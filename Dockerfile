@@ -8,6 +8,10 @@ RUN eval `opam config env`
 RUN opam install core re2 menhir
 RUN opam config env >> ~/.profile
 RUN opam config env >> ~/.bashrc
+RUN wget https://bitheap.org/cram/cram-0.6.tar.gz
+RUN tar zxvf cram-0.6.tar.gz
+WORKDIR cram-0.6
+RUN make install
 COPY ./compiler /compiler
 COPY ./build.sh /compiler
 WORKDIR /compiler

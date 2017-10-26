@@ -75,7 +75,7 @@ There's nothing less scary than a keyword.
 
 Surprise is a key element of being scared.
 
-It will come as no surprise to you, then, that Spookyland employs the element of surprise in its mandate to spook. Not unlike MongoDB, the spookylang runtime will occasionally and unpredictably produce terrifying output.
+It will come as no surprise to you, then, that Spookylang employs the element of surprise in its mandate to spook. Not unlike MongoDB, the spookylang runtime will occasionally and unpredictably produce terrifying output.
 
 
 # Building It 🍬

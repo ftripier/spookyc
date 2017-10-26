@@ -1,9 +1,12 @@
-👻 scary_recursion 👿😈 💀
+👻 scary_recursion 👿 iterations 😈 💀
+  😨 👿iterations <= 0 😈 💀
+    🍬 ⚰️🎃
+  ☠️
   print_and_then_scream 👿"vampire"😈🎃
-  scary_recursion👿😈🎃
+  scary_recursion👿 iterations - 1😈🎃
 ☠️
 
 👻 boo! 👿  😈 💀
-  scary_recursion👿😈🎃
+  scary_recursion👿 5 😈🎃
   🍬 ⚰️🎃
 ☠️

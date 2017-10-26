@@ -1,6 +1,7 @@
 version: '3'
 services:
-  spooky-compiler:
+  spooky-tests:
     build: .
     volumes:
      - .:/source
+    entrypoint: cram /source/tests/examples_output.t

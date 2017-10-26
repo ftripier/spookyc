@@ -318,11 +318,16 @@ class virtual_machine = object(self)
   val mutable registers = ((Array.create ~len:0 (Void)): spookyval array)
   val mutable op_stack = ([] : spookyval list)
   val mutable debug = false
+  val mutable jumpscares = false  
   val mutable context = Void
   val mutable returning = false
 
   method enable_debug =
     debug <- true
+
+  method enable_jumpscares =
+    JumpScares.initialize;
+    jumpscares <- true
 
   method print_and_then_scream =
     match op_stack with
@@ -515,7 +520,8 @@ class virtual_machine = object(self)
         self#try_loop loop_statement        
     );
 
-  method interpret_opcodes opcodes = 
+  method interpret_opcodes opcodes =
+    JumpScares.try_jump_scare;
     match Stream.peek opcodes, op_stack with
     | None, [] -> ()
     | None, result :: tl -> ()
@@ -873,11 +879,12 @@ let rec opcodes ?d:(debug=false) bytes =
     )
   in Stream.from(next_opcode)
 
-let interpret ?d:(debug=false) bytestream =
+let interpret ?j:(jumpscares=false) ?d:(debug=false) bytestream =
   if debug then (
     print_endline "DEBUGGING BYTECODE: ";
     print_newline()
   );
   let vm = new virtual_machine in
   if debug then vm#enable_debug;
+  if jumpscares then vm#enable_jumpscares;
   vm#interpret_opcodes (opcodes ~d:debug bytestream)

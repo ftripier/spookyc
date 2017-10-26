@@ -249,7 +249,7 @@ and compile_key_value_assignment key_val symbol_table =
     let key_val_expr = List.append key_expression value_expression in
     List.append key_opcode key_val_expr
 
-let compile debug filename =
+let compile debug jumpscares filename =
   let input = open_in filename in
   let filebuf = Lexing.from_channel input in
   try
@@ -267,7 +267,7 @@ let compile debug filename =
       print_newline();
       print_newline();      
     );
-    BytecodeInterpreter.interpret ~d:debug (Stream.of_list (add_main_call st (compile_ast st ast)));
+    BytecodeInterpreter.interpret ~j:jumpscares ~d:debug (Stream.of_list (add_main_call st (compile_ast st ast)));
     if debug then print_endline "🐛  🐞  🐜  🦋  🕷️  🐝  🐛  🦋  🐞  🐛  🐞  🐜  🐝  🦋  🕷️  🐛  🐝  🦋  🐞  🕷️  🐛  🦋  🐝  🐞  🐛  🐞  🐜  🦋  🐞  🐝  🕷️  🐛  🦋  🐞"    
   with
   | Scarerrors.Error msg ->
@@ -287,6 +287,7 @@ let spec =
   let open Command.Spec in
   empty
   +> flag "-d" no_arg ~doc:"run with scary de'bug'ging output"
+  +> flag "-j" no_arg ~doc:"run with jumpscares"
   +> anon("filename" %: file)
   
 let command =
@@ -294,7 +295,7 @@ let command =
   ~summary:"The Spooky language compiler"
   ~readme:(fun () -> "The world's first scary-complete language.")
   spec
-  (fun debug filename () -> compile debug filename)
+  (fun jumpscares debug filename () -> compile jumpscares debug filename)
 
 let () =
   Command.run ~version:"0.10" ~build_info:"RWO" command

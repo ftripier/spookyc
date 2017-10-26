@@ -17,4 +17,4 @@ COPY ./build.sh /compiler
 WORKDIR /compiler
 RUN /compiler/build.sh
 RUN ln -s /compiler/_build/spooky.native /usr/local/bin/compile
-ENTRYPOINT [ "compile" ]
+ENTRYPOINT [ "compile", "-j" ]

@@ -155,7 +155,7 @@ Spookylang's commitment to scares n' thrills is rivaled only by the laziness of 
 `print_and_then_scream` takes an expression, coerces it to a string, and then screams it into the nether of the standard output string. To preserve Spookylang's spooky complete invariant, `print_and_then_scream` will crash your program if passed an expression that our Artificial Intelligence Hardcoded List of Regular Expressions fails to recognize.
 
 ```
-print_and_then_scream👿"i'm screaming!"😈🎃 -> "i'm not screaming! Ahhhhhhhhhh!"
+print_and_then_scream👿"i'm screaming!"😈🎃 -> "i'm screaming! Ahhhhhhhhhh!"
 print_and_then_scream👿"this is not scary"😈🎃 -> nice try, we just crashed your program.
 ```
 
